@@ -599,14 +599,14 @@ export default function GHCAcademy() {
     setExamAnswers([]);
   };
 
-  if (!currentUser || currentPage === 'login') {
-    return (
-      <>
-        <style>{globalStyles}</style>
-        <Login onLogin={handleLogin} />
-      </>
-    );
-  }
+  if (currentPage === 'login' && !currentUser) {
+  return (
+    <>
+      <style>{globalStyles}</style>
+      <Login onLogin={handleLogin} />
+    </>
+  );
+}
 
   const totalRevenue = transactions.filter(t => t.status === 'completed').reduce((sum, t) => sum + t.amount, 0);
   const pendingRevenue = transactions.filter(t => t.status === 'pending').reduce((sum, t) => sum + t.amount, 0);
