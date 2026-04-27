@@ -395,7 +395,30 @@ const Login = ({ onLogin }) => {
                   borderTopColor: 'white', borderRadius: '50%'
                 }} />
             ) : (
-              <><Settings size={24} />Administrator Access<ChevronRight size={24} /></>
+              {showAdminButton && (
+  <motion.button
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+    onClick={() => handleLogin('admin')}
+    disabled={loading}
+    className="hover-lift"
+    style={{
+      width: '100%',
+      padding: '1.5rem',
+      background: type === 'admin' && loading ? 'rgba(59,130,246,0.2)' : `linear-gradient(135deg, ${COLORS.info}, #1D4ED8)`,
+      border: 'none',
+      borderRadius: '1rem',
+      color: 'white',
+      fontSize: '1.125rem',
+      fontWeight: 800,
+      cursor: loading ? 'not-allowed' : 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '0.75rem'
+    }}
+  >
+    {type === 'admin' && loading ? (
             )}
           </motion.button>
 
