@@ -468,7 +468,7 @@ const AIAssistant = () => {
 // CONTINUE IN NEXT MESSAGE...
 
 export default function GHCAcademy() {
-  const [currentPage, setCurrentPage] = useState('login');
+  const [currentPage, setCurrentPage] = useState('store');
   const [currentUser, setCurrentUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toast, setToast] = useState(null);
