@@ -1,1307 +1,1156 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, ChevronRight, BookOpen, Award, Users, Clock, Play, Download, Eye, EyeOff, Zap, Target, TrendingUp, Star, Bell, Settings, LogOut, Home, GraduationCap, FileText, BarChart3 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Menu, X, ChevronRight, BookOpen, Award, Users, Clock, Zap, TrendingUp, Bell, Settings, LogOut, Home, GraduationCap, DollarSign, AlertCircle, CheckCircle, Lock, Unlock, Brain, BarChart3, CreditCard, FileText, Activity, ArrowUpRight, PlayCircle, Trophy, Flame, Check, AlertTriangle, Download, Video, FileQuestion } from 'lucide-react';
 
 // ============================================================================
-// GHC ACADEMY - EXPERIENCIA NATIVA DE LUJO
-// Glassmorphism + Animaciones CSS Avanzadas + Motion Design
+// GLOBAL STYLES
 // ============================================================================
-
-const COLORS = {
-  dark: {
-    bg: '#0D0D0D',
-    surface: '#1A1A1A',
-    surfaceHover: '#252525',
-    border: 'rgba(255, 255, 255, 0.08)',
-    text: '#FFFFFF',
-    textMuted: '#A0A0A0',
-    accent: '#E26A1B',
-    accentHover: '#FF7A2E',
-    success: '#10B981',
-    glass: 'rgba(26, 26, 26, 0.6)',
-  }
-};
-
 const globalStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap');
   
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-  
-  body {
-    font-family: 'Inter', sans-serif;
-    overflow-x: hidden;
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; overflow-x: hidden; background: #0A0A0A; }
+
+  .glass {
+    background: rgba(26, 26, 26, 0.8);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  .backdrop-blur {
+  .glass-light {
+    background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
 
-  .fade-in-up {
-    animation: fadeInUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  }
-
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(60px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .scale-in {
-    animation: scaleIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  }
-
-  @keyframes scaleIn {
-    from {
-      opacity: 0;
-      transform: scale(0.8);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  .slide-in {
-    animation: slideIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  }
-
-  @keyframes slideIn {
-    from {
-      transform: translateX(100px);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-
-  .spinner {
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .float {
-    animation: float 1.5s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(10px);
-    }
-  }
-
-  .stagger-1 { animation-delay: 0.1s; }
-  .stagger-2 { animation-delay: 0.2s; }
-  .stagger-3 { animation-delay: 0.3s; }
-  .stagger-4 { animation-delay: 0.4s; }
-  .stagger-5 { animation-delay: 0.5s; }
-
-  .hover-lift {
-    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s;
-  }
-
-  .hover-lift:hover {
-    transform: translateY(-8px);
-  }
-
-  .avatar-pop {
-    animation: avatarPop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
-  }
-
-  @keyframes avatarPop {
-    from {
-      transform: scale(0) translateX(-20px);
-      opacity: 0;
-    }
-    to {
-      transform: scale(1) translateX(0);
-      opacity: 1;
-    }
-  }
+  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  
+  .hover-lift { transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4) !important; }
 `;
 
-// Datos
-const COURSES = [
-  {
-    id: 'nutricion',
-    title: 'Nutrición Deportiva Científica',
-    category: 'Nutrición',
-    image: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=1400&q=90',
-    gradient: 'linear-gradient(135deg, rgba(226, 106, 27, 0.2), rgba(239, 68, 68, 0.2))',
-    price: 349,
-    students: 1256,
-    rating: 4.9,
-    duration: '45h',
-    modules: 12,
-    description: 'Domina la periodización nutricional y protocolos de suplementación basados en evidencia.',
-    avatars: [
-      'https://i.pravatar.cc/150?img=1',
-      'https://i.pravatar.cc/150?img=2',
-      'https://i.pravatar.cc/150?img=3',
-      'https://i.pravatar.cc/150?img=4',
-      'https://i.pravatar.cc/150?img=5'
-    ],
-    features: ['Periodización nutricional', 'Suplementación científica', 'Casos prácticos reales']
-  },
-  {
-    id: 'fuerza',
-    title: 'Entrenamiento de Fuerza',
-    category: 'Entrenamiento',
-    image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1400&q=90',
-    gradient: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(6, 182, 212, 0.2))',
-    price: 399,
-    students: 2134,
-    rating: 4.9,
-    duration: '50h',
-    modules: 15,
-    description: 'Programación científica de fuerza desde biomecánica hasta periodización avanzada.',
-    avatars: [
-      'https://i.pravatar.cc/150?img=6',
-      'https://i.pravatar.cc/150?img=7',
-      'https://i.pravatar.cc/150?img=8',
-      'https://i.pravatar.cc/150?img=9',
-      'https://i.pravatar.cc/150?img=10'
-    ],
-    features: ['Biomecánica aplicada', 'Programación científica', 'Prevención de lesiones']
-  },
-  {
-    id: 'anatomia',
-    title: 'Anatomía Funcional',
-    category: 'Ciencia',
-    image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1400&q=90',
-    gradient: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2))',
-    price: 299,
-    students: 892,
-    rating: 4.8,
-    duration: '35h',
-    modules: 10,
-    description: 'Comprensión profunda de la anatomía funcional y su aplicación al rendimiento.',
-    avatars: [
-      'https://i.pravatar.cc/150?img=11',
-      'https://i.pravatar.cc/150?img=12',
-      'https://i.pravatar.cc/150?img=13',
-      'https://i.pravatar.cc/150?img=14',
-      'https://i.pravatar.cc/150?img=15'
-    ],
-    features: ['Anatomía 3D', 'Cadenas cinéticas', 'Análisis del movimiento']
-  }
-];
-
-// Hooks
-const useLocalStorage = (key, initialValue) => {
-  const [storedValue, setStoredValue] = useState(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      return initialValue;
-    }
-  });
-
-  const setValue = (value) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  return [storedValue, setValue];
+const COLORS = {
+  accent: '#E26A1B',
+  success: '#10B981',
+  warning: '#F59E0B',
+  error: '#EF4444',
+  info: '#3B82F6',
 };
 
-// Sidebar
-const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, currentUser }) => {
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'courses', label: 'Cursos', icon: BookOpen },
-    { id: 'progress', label: 'Mi Progreso', icon: TrendingUp },
-    { id: 'certificates', label: 'Certificados', icon: Award },
+// ============================================================================
+// IN-MEMORY DATABASE
+// ============================================================================
+const INITIAL_STUDENTS = [
+  { id: 1, name: 'Juan Pérez García', email: 'alumno@demo.com', password: '123', phone: '+34 612 345 678', level: 1, progress: 67, status: 'active', payment: 'paid', amount: 349, enrolled: '2024-01-15', lastAccess: '2024-04-26', modulesUnlocked: 8, examsPassed: [1, 2, 3, 4, 5, 6, 7, 8], currentModule: 9 },
+  { id: 2, name: 'María García López', email: 'maria@demo.com', password: '123', phone: '+34 623 456 789', level: 1, progress: 34, status: 'active', payment: 'installment', amount: 399, enrolled: '2024-02-20', lastAccess: '2024-04-25', modulesUnlocked: 5, examsPassed: [1, 2, 3, 4, 5], currentModule: 6 },
+  { id: 3, name: 'Carlos López Martín', email: 'carlos@demo.com', password: '123', phone: '+34 634 567 890', level: 2, progress: 89, status: 'active', payment: 'paid', amount: 449, enrolled: '2024-01-10', lastAccess: '2024-04-26', modulesUnlocked: 16, examsPassed: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], currentModule: 17 },
+  { id: 4, name: 'Ana Martínez Sanz', email: 'ana@demo.com', password: '123', phone: '+34 645 678 901', level: 1, progress: 12, status: 'blocked', payment: 'overdue', amount: 349, enrolled: '2024-03-05', lastAccess: '2024-03-28', modulesUnlocked: 2, examsPassed: [1], currentModule: 2 },
+  { id: 5, name: 'David Rodríguez Ruiz', email: 'david@demo.com', password: '123', phone: '+34 656 789 012', level: 1, progress: 56, status: 'active', payment: 'paid', amount: 399, enrolled: '2024-02-01', lastAccess: '2024-04-24', modulesUnlocked: 8, examsPassed: [1, 2, 3, 4, 5, 6, 7, 8], currentModule: 9 },
+  { id: 6, name: 'Laura Sánchez Díaz', email: 'laura@demo.com', password: '123', phone: '+34 667 890 123', level: 3, progress: 100, status: 'active', payment: 'paid', amount: 549, enrolled: '2023-12-20', lastAccess: '2024-04-19', modulesUnlocked: 18, examsPassed: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], currentModule: 18 },
+  { id: 7, name: 'Javier Fernández Gil', email: 'javier@demo.com', password: '123', phone: '+34 678 901 234', level: 2, progress: 23, status: 'active', payment: 'installment', amount: 449, enrolled: '2024-03-15', lastAccess: '2024-04-26', modulesUnlocked: 4, examsPassed: [1, 2, 3, 4], currentModule: 5 },
+  { id: 8, name: 'Sofía Moreno Torres', email: 'sofia@demo.com', password: '123', phone: '+34 689 012 345', level: 1, progress: 45, status: 'active', payment: 'paid', amount: 349, enrolled: '2024-02-10', lastAccess: '2024-04-25', modulesUnlocked: 6, examsPassed: [1, 2, 3, 4, 5], currentModule: 6 },
+  { id: 9, name: 'Miguel Ángel Romero', email: 'miguel@demo.com', password: '123', phone: '+34 690 123 456', level: 2, progress: 78, status: 'active', payment: 'paid', amount: 449, enrolled: '2024-01-25', lastAccess: '2024-04-26', modulesUnlocked: 12, examsPassed: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], currentModule: 12 },
+  { id: 10, name: 'Elena Navarro Castro', email: 'elena@demo.com', password: '123', phone: '+34 601 234 567', level: 1, progress: 8, status: 'blocked', payment: 'overdue', amount: 349, enrolled: '2024-03-20', lastAccess: '2024-04-01', modulesUnlocked: 1, examsPassed: [1], currentModule: 2 },
+];
+
+const INITIAL_TRANSACTIONS = [
+  { id: 1, studentId: 1, studentName: 'Juan Pérez García', amount: 349, status: 'completed', method: 'SumUp', date: '2024-01-15', concept: 'Nivel 1 - Nutrición Deportiva', time: '10:23' },
+  { id: 2, studentId: 2, studentName: 'María García López', amount: 133, status: 'completed', method: 'Transferencia', date: '2024-02-20', concept: 'Cuota 1/3 Nivel 1', time: '15:45' },
+  { id: 3, studentId: 2, studentName: 'María García López', amount: 133, status: 'completed', method: 'Transferencia', date: '2024-03-20', concept: 'Cuota 2/3 Nivel 1', time: '09:12' },
+  { id: 4, studentId: 2, studentName: 'María García López', amount: 133, status: 'pending', method: 'Transferencia', date: '2024-04-20', concept: 'Cuota 3/3 Nivel 1', time: '--:--' },
+  { id: 5, studentId: 3, studentName: 'Carlos López Martín', amount: 449, status: 'completed', method: 'SumUp', date: '2024-01-10', concept: 'Nivel 2 - Entrenamiento Avanzado', time: '11:34' },
+  { id: 6, studentId: 4, studentName: 'Ana Martínez Sanz', amount: 349, status: 'failed', method: 'SumUp', date: '2024-03-05', concept: 'Nivel 1 - PAGO FALLIDO', time: '14:22' },
+  { id: 7, studentId: 5, studentName: 'David Rodríguez Ruiz', amount: 399, status: 'completed', method: 'SumUp', date: '2024-02-01', concept: 'Nivel 1 - Nutrición Deportiva', time: '16:55' },
+  { id: 8, studentId: 6, studentName: 'Laura Sánchez Díaz', amount: 549, status: 'completed', method: 'Transferencia', date: '2023-12-20', concept: 'Nivel 3 - Rendimiento Élite', time: '08:30' },
+  { id: 9, studentId: 7, studentName: 'Javier Fernández Gil', amount: 150, status: 'completed', method: 'SumUp', date: '2024-03-15', concept: 'Cuota 1/3 Nivel 2', time: '12:10' },
+  { id: 10, studentId: 7, studentName: 'Javier Fernández Gil', amount: 150, status: 'pending', method: 'SumUp', date: '2024-04-15', concept: 'Cuota 2/3 Nivel 2', time: '--:--' },
+  { id: 11, studentId: 8, studentName: 'Sofía Moreno Torres', amount: 349, status: 'completed', method: 'SumUp', date: '2024-02-10', concept: 'Nivel 1 - Nutrición Deportiva', time: '13:45' },
+  { id: 12, studentId: 9, studentName: 'Miguel Ángel Romero', amount: 449, status: 'completed', method: 'Transferencia', date: '2024-01-25', concept: 'Nivel 2 - Entrenamiento Avanzado', time: '10:05' },
+  { id: 13, studentId: 10, studentName: 'Elena Navarro Castro', amount: 349, status: 'failed', method: 'SumUp', date: '2024-03-20', concept: 'Nivel 1 - PAGO FALLIDO', time: '17:33' },
+  { id: 14, studentId: 1, studentName: 'Juan Pérez García', amount: 150, status: 'pending', method: 'Transferencia', date: '2024-04-26', concept: 'Módulo Extra Premium', time: '--:--' },
+  { id: 15, studentId: 3, studentName: 'Carlos López Martín', amount: 99, status: 'pending', method: 'SumUp', date: '2024-04-25', concept: 'Certificado Oficial', time: '--:--' },
+];
+
+const COURSE_LEVELS = {
+  1: {
+    name: 'Nutrición Deportiva',
+    image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800',
+    modules: [
+      { id: 1, title: 'Fundamentos de Nutrición', duration: '2h 30min', type: 'video', locked: false },
+      { id: 2, title: 'Macronutrientes Esenciales', duration: '3h 15min', type: 'video', locked: false },
+      { id: 3, title: 'Micronutrientes y Vitaminas', duration: '2h 45min', type: 'pdf', locked: false },
+      { id: 4, title: 'Hidratación en el Deporte', duration: '1h 50min', type: 'video', locked: false },
+      { id: 5, title: 'Timing Nutricional', duration: '2h 20min', type: 'video', locked: false },
+      { id: 6, title: 'Planificación de Comidas', duration: '3h 00min', type: 'pdf', locked: false },
+      { id: 7, title: 'Nutrición Pre-Entreno', duration: '1h 40min', type: 'video', locked: false },
+      { id: 8, title: 'Nutrición Post-Entreno', duration: '1h 45min', type: 'video', locked: false },
+      { id: 9, title: 'Suplementación Deportiva', duration: '2h 50min', type: 'pdf', locked: true },
+      { id: 10, title: 'Pérdida de Grasa', duration: '3h 10min', type: 'video', locked: true },
+      { id: 11, title: 'Ganancia Muscular', duration: '2h 55min', type: 'video', locked: true },
+      { id: 12, title: 'Casos Prácticos', duration: '4h 00min', type: 'pdf', locked: true },
+    ],
+    totalModules: 12,
+    price: 349
+  },
+  2: {
+    name: 'Entrenamiento Fuerza',
+    image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800',
+    modules: [
+      { id: 1, title: 'Introducción al Entrenamiento', duration: '2h 00min', type: 'video', locked: false },
+      { id: 2, title: 'Anatomía Funcional', duration: '3h 30min', type: 'pdf', locked: false },
+      { id: 3, title: 'Técnica de Ejercicios', duration: '4h 00min', type: 'video', locked: false },
+      { id: 4, title: 'Programación de Fuerza', duration: '3h 15min', type: 'pdf', locked: false },
+      { id: 5, title: 'Periodización Avanzada', duration: '2h 45min', type: 'video', locked: false },
+      { id: 6, title: 'Biomecánica Aplicada', duration: '3h 20min', type: 'video', locked: false },
+      { id: 7, title: 'Prevención de Lesiones', duration: '2h 30min', type: 'pdf', locked: true },
+      { id: 8, title: 'Ejercicios Avanzados', duration: '3h 50min', type: 'video', locked: true },
+      { id: 9, title: 'Sistemas de Entrenamiento', duration: '2h 40min', type: 'video', locked: true },
+      { id: 10, title: 'Evaluación del Rendimiento', duration: '2h 15min', type: 'pdf', locked: true },
+      { id: 11, title: 'Powerlifting', duration: '3h 00min', type: 'video', locked: true },
+      { id: 12, title: 'Halterofilia', duration: '3h 10min', type: 'video', locked: true },
+      { id: 13, title: 'Entrenamiento Funcional', duration: '2h 50min', type: 'video', locked: true },
+      { id: 14, title: 'Movilidad Avanzada', duration: '2h 20min', type: 'video', locked: true },
+      { id: 15, title: 'Programación Personalizada', duration: '4h 30min', type: 'pdf', locked: true },
+      { id: 16, title: 'Casos de Estudio', duration: '3h 40min', type: 'pdf', locked: true },
+    ],
+    totalModules: 16,
+    price: 449
+  },
+  3: {
+    name: 'Rendimiento Élite',
+    image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800',
+    modules: [
+      { id: 1, title: 'Fisiología del Ejercicio', duration: '3h 30min', type: 'pdf', locked: false },
+      { id: 2, title: 'Sistemas Energéticos', duration: '2h 45min', type: 'video', locked: false },
+      { id: 3, title: 'Adaptaciones al Entrenamiento', duration: '3h 15min', type: 'video', locked: false },
+      { id: 4, title: 'Evaluación Física Integral', duration: '4h 00min', type: 'pdf', locked: false },
+      { id: 5, title: 'Entrenamiento de Velocidad', duration: '3h 20min', type: 'video', locked: false },
+      { id: 6, title: 'Entrenamiento de Potencia', duration: '3h 10min', type: 'video', locked: false },
+      { id: 7, title: 'Resistencia Aeróbica', duration: '2h 50min', type: 'video', locked: true },
+      { id: 8, title: 'Resistencia Anaeróbica', duration: '2h 40min', type: 'video', locked: true },
+      { id: 9, title: 'Psicología del Deporte', duration: '3h 00min', type: 'pdf', locked: true },
+      { id: 10, title: 'Recuperación Avanzada', duration: '2h 30min', type: 'video', locked: true },
+      { id: 11, title: 'Tecnología en el Deporte', duration: '2h 45min', type: 'video', locked: true },
+      { id: 12, title: 'Análisis de Datos', duration: '3h 25min', type: 'pdf', locked: true },
+      { id: 13, title: 'Periodización Táctica', duration: '3h 15min', type: 'video', locked: true },
+      { id: 14, title: 'Alto Rendimiento', duration: '4h 00min', type: 'video', locked: true },
+      { id: 15, title: 'Gestión de Cargas', duration: '2h 55min', type: 'pdf', locked: true },
+      { id: 16, title: 'Peak Performance', duration: '3h 30min', type: 'video', locked: true },
+      { id: 17, title: 'Competición Elite', duration: '3h 45min', type: 'video', locked: true },
+      { id: 18, title: 'Proyecto Final', duration: '5h 00min', type: 'pdf', locked: true },
+    ],
+    totalModules: 18,
+    price: 549
+  }
+};
+
+const EXAM_QUESTIONS = {
+  1: [
+    { id: 1, question: '¿Cuál es el macronutriente más importante para la recuperación muscular?', options: ['Carbohidratos', 'Proteínas', 'Grasas', 'Fibra'], correct: 1 },
+    { id: 2, question: '¿Cuántos gramos de proteína por kg se recomiendan para atletas?', options: ['0.8-1g', '1.2-2g', '3-4g', '5-6g'], correct: 1 },
+    { id: 3, question: '¿Qué es la ventana anabólica?', options: ['Horario de comidas', 'Periodo post-entreno', 'Tiempo de ayuno', 'Duración del sueño'], correct: 1 },
+    { id: 4, question: '¿Cuál es el combustible durante ejercicio de alta intensidad?', options: ['Grasas', 'Proteínas', 'Glucógeno', 'Cetonas'], correct: 2 },
+    { id: 5, question: '¿Qué vitamina es esencial para vegetarianos deportistas?', options: ['Vitamina C', 'B12', 'Vitamina D', 'Vitamina K'], correct: 1 },
+  ],
+  2: [
+    { id: 1, question: '¿Qué es el 1RM?', options: ['1 Repetición Máxima', '1 Rutina Mensual', '1 Resto Mínimo', '1 Rango Muscular'], correct: 0 },
+    { id: 2, question: '¿Cuántas series son óptimas por músculo por semana?', options: ['1-5', '6-9', '10-20', '30-40'], correct: 2 },
+    { id: 3, question: '¿Qué es la hipertrofia?', options: ['Pérdida muscular', 'Aumento muscular', 'Definición', 'Resistencia'], correct: 1 },
+    { id: 4, question: '¿Rango de repeticiones ideal para fuerza?', options: ['1-5', '8-12', '15-20', '25-30'], correct: 0 },
+    { id: 5, question: '¿Qué es la sobrecarga progresiva?', options: ['Entrenar más días', 'Aumentar peso gradualmente', 'Descansar más', 'Comer más'], correct: 1 },
+  ],
+  3: [
+    { id: 1, question: '¿Sistema energético en sprints de 10 segundos?', options: ['Aeróbico', 'ATP-PC', 'Glucolítico', 'Oxidativo'], correct: 1 },
+    { id: 2, question: '¿Qué es el VO2 Max?', options: ['Volumen máximo de oxígeno', 'Velocidad óptima', 'Variable oxidativa', 'Ventilación'], correct: 0 },
+    { id: 3, question: '¿Descanso entre series de fuerza máxima?', options: ['30 seg', '1 min', '2-5 min', '10 min'], correct: 2 },
+    { id: 4, question: '¿Qué es la periodización?', options: ['Organización en ciclos', 'Descanso activo', 'Dieta por fases', 'Horario fijo'], correct: 0 },
+    { id: 5, question: '¿Herramienta para medir carga de entrenamiento?', options: ['Báscula', 'RPE/sRPE', 'Cronómetro', 'GPS'], correct: 1 },
+  ]
+};
+
+// ============================================================================
+// COMPONENTS
+// ============================================================================
+
+const Toast = ({ message, type, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
+      style={{
+        position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 10001,
+        padding: '1rem 1.5rem', borderRadius: '0.75rem',
+        background: type === 'success' ? COLORS.success : type === 'error' ? COLORS.error : COLORS.info,
+        color: 'white', fontWeight: 600, boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+        display: 'flex', alignItems: 'center', gap: '0.75rem'
+      }}>
+      {type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+      {message}
+    </motion.div>
+  );
+};
+
+const Header = ({ onMenuToggle, currentUser, onLogout }) => (
+  <header className="glass" style={{
+    position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+    background: 'rgba(10, 10, 10, 0.95)', backdropFilter: 'blur(40px)',
+    WebkitBackdropFilter: 'blur(40px)',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+  }}>
+    <div style={{ maxWidth: '90rem', margin: '0 auto', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <button onClick={onMenuToggle} style={{
+          background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white',
+          cursor: 'pointer', padding: '0.75rem', borderRadius: '0.75rem', display: 'flex'
+        }}>
+          <Menu size={22} />
+        </button>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{
+            width: '2.5rem', height: '2.5rem', borderRadius: '50%',
+            background: `linear-gradient(135deg, ${COLORS.accent}, #EF4444)`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'white', fontWeight: 900, fontSize: '1.125rem',
+            boxShadow: `0 0 20px ${COLORS.accent}40`
+          }}>G</div>
+          <div>
+            <div style={{ color: 'white', fontWeight: 900, fontSize: '1rem' }}>GHC ACADEMY</div>
+            <div style={{ color: COLORS.accent, fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.1em' }}>
+              {currentUser.role === 'admin' ? 'ADMIN PANEL' : 'STUDENT PORTAL'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ color: 'white', fontSize: '0.875rem', fontWeight: 600 }}>{currentUser.name}</div>
+        <button onClick={onLogout} style={{
+          padding: '0.75rem 1rem', background: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '0.75rem',
+          color: COLORS.error, cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem',
+          display: 'flex', alignItems: 'center', gap: '0.5rem'
+        }}>
+          <LogOut size={18} />
+          Logout
+        </button>
+      </div>
+    </div>
+  </header>
+);
+
+const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, role }) => {
+  const adminMenu = [
+    { id: 'admin-dashboard', label: 'Dashboard', icon: BarChart3 },
+    { id: 'admin-students', label: 'Student Management', icon: Users },
+    { id: 'admin-payments', label: 'Payments & Finance', icon: DollarSign },
+    { id: 'admin-authorizations', label: 'Access Authorizations', icon: Lock },
+    { id: 'admin-courses', label: 'Courses & Modules', icon: BookOpen },
+    { id: 'admin-exams', label: 'Exams', icon: FileQuestion },
+    { id: 'admin-automations', label: 'Automations', icon: Zap },
+    { id: 'admin-history', label: 'History', icon: Activity },
   ];
+
+  const studentMenu = [
+    { id: 'student-dashboard', label: 'My Dashboard', icon: Home },
+    { id: 'student-courses', label: 'My Courses', icon: BookOpen },
+    { id: 'student-content', label: 'Content', icon: Video },
+    { id: 'student-exams', label: 'Exams', icon: FileQuestion },
+    { id: 'student-certificates', label: 'Certificates', icon: Award },
+  ];
+
+  const menu = role === 'admin' ? adminMenu : studentMenu;
 
   return (
     <>
-      {isOpen && (
-        <div
-          onClick={onClose}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.6)',
-            zIndex: 40,
-            animation: 'fadeIn 0.3s'
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={onClose} style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+              backdropFilter: 'blur(8px)', zIndex: 9998
+            }} />
+        )}
+      </AnimatePresence>
 
-      <aside
-        style={{
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: '18rem',
-          zIndex: 50,
-          background: COLORS.dark.glass,
-          borderRight: `1px solid ${COLORS.dark.border}`,
-          transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
-          transition: 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-        }}
-        className="backdrop-blur"
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '1.5rem',
-            borderBottom: `1px solid ${COLORS.dark.border}`
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <img 
-                src="/mnt/user-data/uploads/logo-limpio.png"
-                alt="GHC"
-                style={{
-                  width: '3rem',
-                  height: '3rem',
-                  objectFit: 'contain',
-                  filter: 'drop-shadow(0 0 20px rgba(226, 106, 27, 0.4))'
-                }}
-              />
-              <div>
-                <div style={{ color: 'white', fontWeight: 900, fontSize: '1.125rem', letterSpacing: '-0.02em' }}>
-                  GHC ACADEMY
-                </div>
-                <div style={{ color: COLORS.dark.accent, fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.1em' }}>
-                  SPORT SCIENCE
-                </div>
-              </div>
+      <motion.aside initial={{ x: -320 }} animate={{ x: isOpen ? 0 : -320 }} transition={{ type: 'spring', damping: 25 }}
+        className="glass" style={{
+          position: 'fixed', left: 0, top: 0, bottom: 0, width: '20rem', zIndex: 9999,
+          borderRight: '1px solid rgba(255,255,255,0.1)', overflowY: 'auto'
+        }}>
+        <div style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
+            <div style={{ color: 'white', fontWeight: 900, fontSize: '1.125rem' }}>
+              {role === 'admin' ? 'ADMIN MENU' : 'MY ACADEMY'}
             </div>
             <button onClick={onClose} style={{
-              background: 'none',
-              border: 'none',
-              color: 'rgba(255,255,255,0.6)',
-              cursor: 'pointer'
+              background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer'
             }}>
-              <X size={24} />
+              <X size={20} />
             </button>
           </div>
 
-          {currentUser && (
-            <div style={{ padding: '1.5rem' }} className="fade-in-up">
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '0.75rem',
-                borderRadius: '1rem',
-                background: COLORS.dark.surface
-              }}>
-                <div style={{
-                  width: '2.5rem',
-                  height: '2.5rem',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #E26A1B, #EF4444)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontWeight: 700
-                }}>
-                  {currentUser.name.charAt(0)}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: 'white', fontWeight: 600, fontSize: '0.875rem' }}>
-                    {currentUser.name}
-                  </div>
-                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>
-                    Plan Premium
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <nav style={{ flex: 1, padding: '1rem 1rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-              {menuItems.map((item, idx) => {
-                const Icon = item.icon;
-                const isActive = currentPage === item.id;
-                
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      onNavigate(item.id);
-                      onClose();
-                    }}
-                    className={`fade-in-up stagger-${idx + 1}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      padding: '0.75rem 1rem',
-                      borderRadius: '0.75rem',
-                      background: isActive ? COLORS.dark.accent : 'transparent',
-                      color: isActive ? 'white' : COLORS.dark.textMuted,
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontWeight: 600,
-                      fontSize: '0.9375rem',
-                      transition: 'all 0.3s',
-                      width: '100%',
-                      textAlign: 'left'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isActive) e.currentTarget.style.transform = 'translateX(8px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateX(0)';
-                    }}
-                  >
-                    <Icon size={20} />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </nav>
-
-          <div style={{
-            padding: '1rem',
-            borderTop: `1px solid ${COLORS.dark.border}`
-          }}>
-            {currentUser && (
-              <button
-                onClick={() => onNavigate('logout')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.75rem 1rem',
-                  borderRadius: '0.75rem',
-                  background: 'transparent',
-                  color: '#EF4444',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  width: '100%',
-                  transition: 'background 0.3s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                <LogOut size={20} />
-                <span>Cerrar Sesión</span>
-              </button>
-            )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {menu.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentPage === item.id;
+              
+              return (
+                <motion.button key={item.id} whileHover={{ x: 4 }} whileTap={{ scale: 0.98 }}
+                  onClick={() => { onNavigate(item.id); onClose(); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.75rem',
+                    padding: '0.875rem 1rem', borderRadius: '0.75rem',
+                    background: isActive ? `${COLORS.accent}33` : 'transparent',
+                    color: isActive ? COLORS.accent : 'rgba(255,255,255,0.7)',
+                    border: 'none', cursor: 'pointer', fontWeight: 600,
+                    width: '100%', textAlign: 'left', transition: 'all 0.3s'
+                  }}>
+                  <Icon size={20} />
+                  <span>{item.label}</span>
+                </motion.button>
+              );
+            })}
           </div>
         </div>
-      </aside>
+      </motion.aside>
     </>
   );
 };
 
-// Header flotante
-const FloatingHeader = ({ onMenuToggle, currentUser }) => {
-  const [scrolled, setScrolled] = useState(false);
+const Login = ({ onLogin }) => {
+  const [loading, setLoading] = useState(false);
+  const [type, setType] = useState(null);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 100);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  return (
-    <header
-      className={scrolled ? 'backdrop-blur' : ''}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 30,
-        background: scrolled ? 'rgba(13, 13, 13, 0.8)' : 'transparent',
-        borderBottom: scrolled ? `1px solid ${COLORS.dark.border}` : 'none',
-        transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-        animation: 'slideDown 0.5s'
-      }}
-    >
-      <style>{`@keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); }}`}</style>
-      
-      <div style={{
-        maxWidth: '80rem',
-        margin: '0 auto',
-        padding: '1rem 1.5rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button
-            onClick={onMenuToggle}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'white',
-              cursor: 'pointer',
-              padding: '0.5rem',
-              transition: 'transform 0.3s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-          >
-            <Menu size={24} />
-          </button>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'rgba(255,255,255,0.6)',
-              cursor: 'pointer',
-              position: 'relative',
-              padding: '0.5rem'
-            }}
-          >
-            <Bell size={20} />
-            <span style={{
-              position: 'absolute',
-              top: '0.25rem',
-              right: '0.25rem',
-              width: '0.5rem',
-              height: '0.5rem',
-              background: COLORS.dark.accent,
-              borderRadius: '50%'
-            }} />
-          </button>
-          
-          {currentUser && (
-            <div style={{
-              width: '2rem',
-              height: '2rem',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #E26A1B, #EF4444)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '0.875rem',
-              fontWeight: 700
-            }}>
-              {currentUser.name.charAt(0)}
-            </div>
-          )}
-        </div>
-      </div>
-    </header>
-  );
-};
-
-// Course Card con efectos de lujo
-const CourseCard = ({ course, onClick, index }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  return (
-    <div
-      className={`hover-lift fade-in-up stagger-${index + 1}`}
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        cursor: 'pointer',
-        borderRadius: '1.5rem',
-        overflow: 'hidden',
-        background: COLORS.dark.surface,
-        border: `1px solid ${COLORS.dark.border}`,
-        boxShadow: isHovered ? '0 20px 60px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(0, 0, 0, 0.2)',
-        transition: 'box-shadow 0.3s'
-      }}
-    >
-      <div style={{ position: 'relative', height: '12rem', overflow: 'hidden' }}>
-        <img
-          src={course.image}
-          alt={course.title}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            transform: isHovered ? 'scale(1.1)' : 'scale(1)',
-            transition: 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-          }}
-        />
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: course.gradient,
-          mixBlendMode: 'multiply'
-        }} />
-        
-        <div
-          style={{
-            position: 'absolute',
-            top: '1rem',
-            left: '1rem',
-            padding: '0.375rem 0.75rem',
-            borderRadius: '0.5rem',
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            color: 'white',
-            background: 'rgba(0, 0, 0, 0.6)',
-            backdropFilter: 'blur(10px)'
-          }}
-          className="backdrop-blur"
-        >
-          {course.category}
-        </div>
-      </div>
-
-      <div style={{ padding: '1.5rem' }}>
-        <h3 style={{
-          fontSize: '1.25rem',
-          fontWeight: 900,
-          color: 'white',
-          marginBottom: '0.5rem',
-          lineHeight: 1.3
-        }}>
-          {course.title}
-        </h3>
-        
-        <p style={{
-          fontSize: '0.875rem',
-          color: 'rgba(255,255,255,0.6)',
-          marginBottom: '1rem',
-          lineHeight: 1.6
-        }}>
-          {course.description}
-        </p>
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
-          {course.features.map((feature, i) => (
-            <div
-              key={i}
-              className={`fade-in-up stagger-${i + 3}`}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.25rem',
-                fontSize: '0.75rem',
-                color: 'rgba(255,255,255,0.5)'
-              }}
-            >
-              <div style={{
-                width: '0.25rem',
-                height: '0.25rem',
-                borderRadius: '50%',
-                background: COLORS.dark.accent
-              }} />
-              <span>{feature}</span>
-            </div>
-          ))}
-        </div>
-
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-          fontSize: '0.75rem',
-          color: 'rgba(255,255,255,0.4)',
-          marginBottom: '1rem'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <Clock size={14} />
-            <span>{course.duration}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <BookOpen size={14} />
-            <span>{course.modules} módulos</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <Star size={14} fill={COLORS.dark.accent} color={COLORS.dark.accent} />
-            <span>{course.rating}</span>
-          </div>
-        </div>
-
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingTop: '1rem',
-          borderTop: `1px solid ${COLORS.dark.border}`
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{ display: 'flex' }}>
-              {course.avatars.slice(0, 4).map((avatar, i) => (
-                <img
-                  key={i}
-                  src={avatar}
-                  alt=""
-                  className={`avatar-pop stagger-${i + 1}`}
-                  style={{
-                    width: '2rem',
-                    height: '2rem',
-                    borderRadius: '50%',
-                    border: `2px solid ${COLORS.dark.surface}`,
-                    marginLeft: i === 0 ? 0 : '-0.75rem'
-                  }}
-                />
-              ))}
-            </div>
-            <div style={{ fontSize: '0.75rem' }}>
-              <div style={{ color: 'white', fontWeight: 700 }}>
-                {course.students.toLocaleString()}
-              </div>
-              <div style={{ color: 'rgba(255,255,255,0.4)' }}>estudiantes</div>
-            </div>
-          </div>
-
-          <div style={{
-            fontSize: '1.5rem',
-            fontWeight: 900,
-            color: COLORS.dark.accent,
-            transform: isHovered ? 'scale(1.1)' : 'scale(1)',
-            transition: 'transform 0.3s'
-          }}>
-            €{course.price}
-          </div>
-        </div>
-      </div>
-
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'linear-gradient(to top, rgba(226, 106, 27, 0.2), transparent)',
-        opacity: isHovered ? 1 : 0,
-        transition: 'opacity 0.3s',
-        pointerEvents: 'none'
-      }} />
-    </div>
-  );
-};
-
-// Hero cinematográfico
-const CinematicHero = ({ onNavigate }) => {
-  const [scrollY, setScrollY] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const parallaxY = scrollY * 0.3;
-  const opacity = Math.max(0, 1 - scrollY / 300);
-
-  return (
-    <div style={{
-      position: 'relative',
-      height: '100vh',
-      minHeight: '800px',
-      overflow: 'hidden',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }}>
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        transform: `translateY(${parallaxY}px)`
-      }}>
-        <img
-          src="https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=1920&q=90"
-          alt="Elite Athlete"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover'
-          }}
-        />
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(to top, #0D0D0D, rgba(13,13,13,0.8), rgba(13,13,13,0.4))'
-        }} />
-      </div>
-
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 10,
-          textAlign: 'center',
-          padding: '0 1.5rem',
-          maxWidth: '80rem',
-          opacity
-        }}
-      >
-        <div className="scale-in" style={{ marginBottom: '2rem' }}>
-          <img 
-            src="/mnt/user-data/uploads/logo-limpio.png"
-            alt="GHC"
-            style={{
-              width: '8rem',
-              height: '8rem',
-              margin: '0 auto',
-              objectFit: 'contain',
-              filter: 'drop-shadow(0 0 30px rgba(226, 106, 27, 0.6))'
-            }}
-          />
-        </div>
-
-        <h1
-          className="fade-in-up stagger-2"
-          style={{
-            fontSize: 'clamp(3rem, 8vw, 7rem)',
-            fontWeight: 900,
-            color: 'white',
-            marginBottom: '1.5rem',
-            lineHeight: 1,
-            letterSpacing: '-0.03em'
-          }}
-        >
-          LA CIENCIA
-          <br />
-          DEL{' '}
-          <span style={{
-            background: 'linear-gradient(135deg, #E26A1B, #EF4444)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}>
-            RENDIMIENTO
-          </span>
-        </h1>
-
-        <p
-          className="fade-in-up stagger-3"
-          style={{
-            fontSize: 'clamp(1.125rem, 2vw, 1.5rem)',
-            color: 'rgba(255,255,255,0.7)',
-            marginBottom: '3rem',
-            maxWidth: '48rem',
-            margin: '0 auto 3rem',
-            lineHeight: 1.6
-          }}
-        >
-          Formación profesional de élite basada en evidencia científica para transformar tu carrera
-        </p>
-
-        <button
-          className="scale-in stagger-4"
-          onClick={() => onNavigate('dashboard')}
-          style={{
-            padding: '1.25rem 3rem',
-            background: 'linear-gradient(135deg, #E26A1B, #EF4444)',
-            color: 'white',
-            fontSize: '1.125rem',
-            fontWeight: 700,
-            border: 'none',
-            borderRadius: '1rem',
-            cursor: 'pointer',
-            boxShadow: '0 12px 40px rgba(226, 106, 27, 0.4)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.75rem',
-            transition: 'transform 0.3s, box-shadow 0.3s'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 16px 48px rgba(226, 106, 27, 0.5)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 12px 40px rgba(226, 106, 27, 0.4)';
-          }}
-        >
-          Explorar Cursos
-          <ChevronRight size={24} />
-        </button>
-
-        <div
-          className="fade-in-up stagger-5"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '2rem',
-            marginTop: '5rem',
-            maxWidth: '48rem',
-            margin: '5rem auto 0'
-          }}
-        >
-          {[
-            { value: '4,282', label: 'Profesionales' },
-            { value: '4.9/5', label: 'Valoración' },
-            { value: '97%', label: 'Tasa de éxito' }
-          ].map((stat, i) => (
-            <div key={i} style={{ textAlign: 'center' }}>
-              <div style={{
-                fontSize: 'clamp(2rem, 4vw, 3.5rem)',
-                fontWeight: 900,
-                color: COLORS.dark.accent,
-                lineHeight: 1,
-                marginBottom: '0.5rem',
-                textShadow: '0 2px 12px rgba(226, 106, 27, 0.5)'
-              }}>
-                {stat.value}
-              </div>
-              <div style={{
-                fontSize: '0.9375rem',
-                color: 'rgba(255,255,255,0.5)',
-                fontWeight: 600
-              }}>
-                {stat.label}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="float" style={{
-        position: 'absolute',
-        bottom: '2.5rem',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        opacity
-      }}>
-        <div style={{
-          width: '1.5rem',
-          height: '2.5rem',
-          border: '2px solid rgba(255,255,255,0.3)',
-          borderRadius: '1.25rem',
-          display: 'flex',
-          justifyContent: 'center',
-          paddingTop: '0.5rem'
-        }}>
-          <div style={{
-            width: '0.25rem',
-            height: '0.5rem',
-            background: 'rgba(255,255,255,0.5)',
-            borderRadius: '0.125rem'
-          }} />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Login
-const LuxuryLogin = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
+  const handleLogin = (loginType) => {
+    setLoading(true);
+    setType(loginType);
     setTimeout(() => {
-      if (email === 'demo@ghc.test' && password === 'demo1234') {
-        onLogin({ email, name: 'Usuario Demo', role: 'student' });
-      } else if (email === 'admin@ghc.test' && password === 'admin1234') {
-        onLogin({ email, name: 'Admin GHC', role: 'admin' });
+      if (loginType === 'admin') {
+        onLogin({ name: 'Admin GHC', role: 'admin' });
       } else {
-        alert('Credenciales incorrectas');
-        setIsLoading(false);
+        onLogin({ name: 'Juan Pérez García', role: 'student', studentId: 1 });
       }
-    }, 1500);
+    }, 1000);
   };
 
   return (
     <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '1.5rem',
-      background: COLORS.dark.bg
+      minHeight: '100vh', display: 'flex', alignItems: 'center',
+      justifyContent: 'center', background: '#0A0A0A', padding: '2rem'
     }}>
-      <div className="scale-in" style={{ width: '100%', maxWidth: '28rem' }}>
-        <div
-          className="backdrop-blur"
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        className="glass" style={{
+          maxWidth: '28rem', width: '100%', borderRadius: '2rem',
+          padding: '3rem', textAlign: 'center'
+        }}>
+        <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 2, repeat: Infinity }}
           style={{
-            borderRadius: '1.5rem',
-            padding: '2rem',
-            background: COLORS.dark.glass,
-            border: `1px solid ${COLORS.dark.border}`,
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
-          }}
-        >
-          <div className="scale-in stagger-1" style={{
-            display: 'flex',
-            justifyContent: 'center',
-            marginBottom: '2rem'
-          }}>
-            <img 
-              src="/mnt/user-data/uploads/logo-limpio.png"
-              alt="GHC"
-              style={{
-                width: '6rem',
-                height: '6rem',
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 0 20px rgba(226, 106, 27, 0.5))'
-              }}
-            />
-          </div>
+            width: '6rem', height: '6rem', margin: '0 auto 2rem',
+            borderRadius: '50%', background: `linear-gradient(135deg, ${COLORS.accent}, #EF4444)`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '2.5rem', fontWeight: 900, color: 'white',
+            boxShadow: `0 0 40px ${COLORS.accent}80`
+          }}>G</motion.div>
 
-          <div className="fade-in-up stagger-2" style={{
-            textAlign: 'center',
-            marginBottom: '2rem'
-          }}>
-            <h2 style={{
-              fontSize: '1.875rem',
-              fontWeight: 900,
-              color: 'white',
-              marginBottom: '0.5rem'
+        <h2 style={{
+          fontSize: '2rem', fontWeight: 900, color: 'white',
+          marginBottom: '0.5rem', fontFamily: 'Playfair Display, serif'
+        }}>GHC Academy</h2>
+        <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>
+          Select your access type
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            onClick={() => handleLogin('admin')} disabled={loading}
+            className="hover-lift" style={{
+              width: '100%', padding: '1.5rem',
+              background: type === 'admin' && loading ? 'rgba(59,130,246,0.2)' : `linear-gradient(135deg, ${COLORS.info}, #1D4ED8)`,
+              border: 'none', borderRadius: '1rem', color: 'white',
+              fontSize: '1.125rem', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem'
             }}>
-              Bienvenido
-            </h2>
-            <p style={{ color: 'rgba(255,255,255,0.5)' }}>
-              Accede a tu formación de élite
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.5rem'
-          }}>
-            <div className="fade-in-up stagger-3">
-              <label style={{
-                display: 'block',
-                color: 'white',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                marginBottom: '0.5rem'
-              }}>
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="tu@email.com"
+            {type === 'admin' && loading ? (
+              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                 style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem',
-                  background: COLORS.dark.surface,
-                  border: `1px solid ${COLORS.dark.border}`,
-                  borderRadius: '0.75rem',
-                  color: 'white',
-                  fontSize: '1rem',
-                  outline: 'none',
-                  transition: 'border-color 0.3s'
-                }}
-                onFocus={(e) => e.target.style.borderColor = COLORS.dark.accent}
-                onBlur={(e) => e.target.style.borderColor = COLORS.dark.border}
-              />
-            </div>
-
-            <div className="fade-in-up stagger-4">
-              <label style={{
-                display: 'block',
-                color: 'white',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                marginBottom: '0.5rem'
-              }}>
-                Contraseña
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="••••••••"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    paddingRight: '3rem',
-                    background: COLORS.dark.surface,
-                    border: `1px solid ${COLORS.dark.border}`,
-                    borderRadius: '0.75rem',
-                    color: 'white',
-                    fontSize: '1rem',
-                    outline: 'none'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: '1rem',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: 'rgba(255,255,255,0.4)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="fade-in-up stagger-5"
-              style={{
-                padding: '1rem',
-                background: 'linear-gradient(135deg, #E26A1B, #EF4444)',
-                color: 'white',
-                fontWeight: 700,
-                border: 'none',
-                borderRadius: '0.75rem',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                fontSize: '1rem',
-                position: 'relative',
-                boxShadow: '0 8px 24px rgba(226, 106, 27, 0.3)',
-                transition: 'transform 0.3s'
-              }}
-              onMouseEnter={(e) => !isLoading && (e.currentTarget.style.transform = 'translateY(-2px)')}
-              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-            >
-              {isLoading ? (
-                <div className="spinner" style={{
-                  width: '1.5rem',
-                  height: '1.5rem',
-                  border: '2px solid rgba(255,255,255,0.3)',
-                  borderTopColor: 'white',
-                  borderRadius: '50%',
-                  margin: '0 auto'
+                  width: '1.5rem', height: '1.5rem', border: '2px solid rgba(255,255,255,0.3)',
+                  borderTopColor: 'white', borderRadius: '50%'
                 }} />
-              ) : (
-                'Acceder'
-              )}
-            </button>
-          </form>
+            ) : (
+              <><Settings size={24} />Administrator Access<ChevronRight size={24} /></>
+            )}
+          </motion.button>
 
-          <div className="fade-in-up stagger-6" style={{
-            marginTop: '2rem',
-            padding: '1rem',
-            borderRadius: '0.75rem',
-            background: COLORS.dark.surface,
-            fontSize: '0.75rem'
-          }}>
-            <div style={{
-              color: 'rgba(255,255,255,0.6)',
-              marginBottom: '0.5rem',
-              fontWeight: 600
+          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            onClick={() => handleLogin('student')} disabled={loading}
+            className="hover-lift" style={{
+              width: '100%', padding: '1.5rem',
+              background: type === 'student' && loading ? 'rgba(16,185,129,0.2)' : `linear-gradient(135deg, ${COLORS.success}, #059669)`,
+              border: 'none', borderRadius: '1rem', color: 'white',
+              fontSize: '1.125rem', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem'
             }}>
-              Cuentas demo:
-            </div>
-            <div style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.8 }}>
-              <div>👤 demo@ghc.test / demo1234</div>
-              <div>👑 admin@ghc.test / admin1234</div>
-            </div>
-          </div>
+            {type === 'student' && loading ? (
+              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                style={{
+                  width: '1.5rem', height: '1.5rem', border: '2px solid rgba(255,255,255,0.3)',
+                  borderTopColor: 'white', borderRadius: '50%'
+                }} />
+            ) : (
+              <><GraduationCap size={24} />Student Access<ChevronRight size={24} /></>
+            )}
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
 
-// Dashboard
-const Dashboard = ({ onNavigate }) => {
+const AIAssistant = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      paddingTop: '6rem',
-      paddingBottom: '3rem',
-      background: COLORS.dark.bg
-    }}>
-      <div style={{
-        maxWidth: '80rem',
-        margin: '0 auto',
-        padding: '0 1.5rem'
-      }}>
-        <div className="fade-in-up" style={{ marginBottom: '3rem' }}>
-          <h1 style={{
-            fontSize: 'clamp(2.5rem, 5vw, 4rem)',
-            fontWeight: 900,
-            color: 'white',
-            marginBottom: '1rem'
-          }}>
-            Dashboard
-          </h1>
-          <p style={{
-            fontSize: '1.125rem',
-            color: 'rgba(255,255,255,0.5)'
-          }}>
-            Gestiona tu formación profesional
-          </p>
-        </div>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '1.5rem',
-          marginBottom: '3rem'
-        }}>
-          {[
-            { label: 'Cursos activos', value: '3', icon: BookOpen, color: 'linear-gradient(135deg, #3B82F6, #06B6D4)' },
-            { label: 'Progreso total', value: '67%', icon: TrendingUp, color: 'linear-gradient(135deg, #E26A1B, #EF4444)' },
-            { label: 'Certificados', value: '2', icon: Award, color: 'linear-gradient(135deg, #A855F7, #EC4899)' }
-          ].map((stat, i) => (
-            <div
-              key={i}
-              className={`fade-in-up stagger-${i + 1} hover-lift`}
-              style={{
-                padding: '1.5rem',
-                borderRadius: '1rem',
-                background: COLORS.dark.surface,
-                border: `1px solid ${COLORS.dark.border}`,
-                cursor: 'pointer'
-              }}
-            >
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '1rem'
-              }}>
-                <div style={{
-                  padding: '0.75rem',
-                  borderRadius: '0.75rem',
-                  background: stat.color
-                }}>
-                  <stat.icon size={24} color="white" />
-                </div>
-                <div style={{
-                  fontSize: '1.875rem',
-                  fontWeight: 900,
-                  color: 'white'
-                }}>
-                  {stat.value}
-                </div>
-              </div>
-              <div style={{
-                color: 'rgba(255,255,255,0.5)',
-                fontWeight: 600
-              }}>
-                {stat.label}
-              </div>
+    <>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div initial={{ opacity: 0, scale: 0.8, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            className="glass" style={{
+              position: 'fixed', bottom: '6rem', right: '2rem', width: '22rem',
+              borderRadius: '1.5rem', padding: '1.5rem', zIndex: 10000,
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+            }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <h4 style={{ color: 'white', fontWeight: 700, fontSize: '1.125rem' }}>🤖 AI Assistant</h4>
+              <button onClick={() => setIsOpen(false)} style={{
+                background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer'
+              }}><X size={20} /></button>
             </div>
-          ))}
-        </div>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.875rem', marginBottom: '1rem' }}>
+              Your personal assistant coming soon
+            </p>
+            <div className="glass-light" style={{ padding: '1rem', borderRadius: '0.75rem' }}>
+              <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                🎯 Features:
+              </div>
+              <ul style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8125rem', paddingLeft: '1.25rem', lineHeight: 1.8 }}>
+                <li>Instant answers</li>
+                <li>Personalized plans</li>
+                <li>Progress analysis</li>
+              </ul>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-          gap: '2rem'
+      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+        onClick={() => setIsOpen(!isOpen)} className="hover-lift" style={{
+          position: 'fixed', bottom: '2rem', right: '2rem',
+          width: '3.5rem', height: '3.5rem', borderRadius: '50%',
+          background: `linear-gradient(135deg, ${COLORS.accent}, #EF4444)`,
+          border: 'none', color: 'white', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, boxShadow: `0 10px 40px ${COLORS.accent}60`
         }}>
-          {COURSES.map((course, index) => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              index={index}
-              onClick={() => onNavigate('course-detail', course.id)}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
+        <Brain size={24} />
+      </motion.button>
+    </>
   );
 };
 
-// App principal
-export default function GHCAcademyNative() {
-  const [currentPage, setCurrentPage] = useState('home');
-  const [currentUser, setCurrentUser] = useLocalStorage('ghc_user', null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [pageData, setPageData] = useState(null);
+// CONTINUE IN NEXT MESSAGE...
 
-  const handleNavigate = (page, data = null) => {
+export default function GHCAcademy() {
+  const [currentPage, setCurrentPage] = useState('login');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [students, setStudents] = useState(INITIAL_STUDENTS);
+  const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS);
+  const [logs, setLogs] = useState([]);
+  const [examInProgress, setExamInProgress] = useState(null);
+  const [examAnswers, setExamAnswers] = useState([]);
+
+  const showToast = (msg, type = 'success') => setToast({ message: msg, type });
+
+  const addLog = (action, target, detail) => {
+    setLogs(prev => [{
+      id: Date.now(),
+      action,
+      user: currentUser?.name || 'System',
+      target,
+      detail,
+      timestamp: new Date().toLocaleString()
+    }, ...prev]);
+  };
+
+  const handleNavigate = (page) => {
     setCurrentPage(page);
-    setPageData(data);
     setSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleLogin = (user) => {
     setCurrentUser(user);
-    handleNavigate('dashboard');
+    handleNavigate(user.role === 'admin' ? 'admin-dashboard' : 'student-dashboard');
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
-    handleNavigate('home');
+    handleNavigate('login');
   };
 
-  if (!currentUser && currentPage !== 'home') {
+  // Admin Actions
+  const blockStudent = (id) => {
+    setStudents(prev => prev.map(s => s.id === id ? { ...s, status: 'blocked' } : s));
+    const student = students.find(s => s.id === id);
+    addLog('Block', student.name, 'Access blocked by admin');
+    showToast(`${student.name} blocked successfully`);
+  };
+
+  const unlockStudent = (id) => {
+    setStudents(prev => prev.map(s => s.id === id ? { ...s, status: 'active' } : s));
+    const student = students.find(s => s.id === id);
+    addLog('Unlock', student.name, 'Access restored by admin');
+    showToast(`${student.name} unlocked successfully`);
+  };
+
+  const confirmPayment = (id) => {
+    setTransactions(prev => prev.map(t => t.id === id ? { ...t, status: 'completed', time: new Date().toLocaleTimeString() } : t));
+    const transaction = transactions.find(t => t.id === id);
+    addLog('Payment Confirmed', transaction.studentName, `€${transaction.amount} processed manually`);
+    showToast(`Payment of €${transaction.amount} confirmed`);
+  };
+
+  const unlockModule = (studentId, moduleId) => {
+    setStudents(prev => prev.map(s => s.id === studentId ? { ...s, modulesUnlocked: Math.max(s.modulesUnlocked, moduleId) } : s));
+    const student = students.find(s => s.id === studentId);
+    addLog('Module Unlocked', student.name, `Module ${moduleId} unlocked manually`);
+    showToast(`Module unlocked for ${student.name}`);
+  };
+
+  // Student Actions
+  const startExam = (level) => {
+    setExamInProgress(level);
+    setExamAnswers([]);
+  };
+
+  const submitExam = () => {
+    const questions = EXAM_QUESTIONS[examInProgress];
+    const correct = examAnswers.filter((answer, idx) => answer === questions[idx].correct).length;
+    const score = (correct / questions.length) * 100;
+    const passed = score >= 70;
+
+    if (passed) {
+      setStudents(prev => prev.map(s => s.id === currentUser.studentId ? {
+        ...s,
+        examsPassed: [...s.examsPassed, s.currentModule],
+        modulesUnlocked: s.modulesUnlocked + 1,
+        currentModule: s.currentModule + 1,
+        progress: Math.min(100, Math.round(((s.examsPassed.length + 1) / COURSE_LEVELS[s.level].totalModules) * 100))
+      } : s));
+      showToast(`Exam passed with ${score.toFixed(0)}%! 🎉`);
+    } else {
+      showToast(`Exam failed with ${score.toFixed(0)}%. Keep studying! 💪`, 'error');
+    }
+
+    setExamInProgress(null);
+    setExamAnswers([]);
+  };
+
+  if (!currentUser || currentPage === 'login') {
     return (
       <>
         <style>{globalStyles}</style>
-        <LuxuryLogin onLogin={handleLogin} />
+        <Login onLogin={handleLogin} />
       </>
     );
   }
 
+  const totalRevenue = transactions.filter(t => t.status === 'completed').reduce((sum, t) => sum + t.amount, 0);
+  const pendingRevenue = transactions.filter(t => t.status === 'pending').reduce((sum, t) => sum + t.amount, 0);
+  const studentData = currentUser.role === 'student' ? students.find(s => s.id === currentUser.studentId) : null;
+  const currentCourse = studentData ? COURSE_LEVELS[studentData.level] : null;
+
   return (
-    <div style={{ background: COLORS.dark.bg, minHeight: '100vh' }}>
+    <div style={{ background: '#0A0A0A', minHeight: '100vh' }}>
       <style>{globalStyles}</style>
       
-      {currentUser && currentPage !== 'login' && (
-        <>
-          <Sidebar
-            isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-            currentPage={currentPage}
-            onNavigate={handleNavigate}
-            currentUser={currentUser}
-          />
-          <FloatingHeader
-            onMenuToggle={() => setSidebarOpen(true)}
-            currentUser={currentUser}
-          />
-        </>
-      )}
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)}
+        currentPage={currentPage} onNavigate={handleNavigate} role={currentUser.role} />
+      
+      <Header onMenuToggle={() => setSidebarOpen(true)}
+        currentUser={currentUser} onLogout={handleLogout} />
 
-      <div className={currentUser ? 'slide-in' : ''} style={{
-        marginLeft: currentUser && window.innerWidth >= 1024 ? '18rem' : 0,
-        transition: 'margin-left 0.3s'
-      }}>
-        {currentPage === 'home' && !currentUser && (
-          <>
-            <CinematicHero onNavigate={handleNavigate} />
-            <div style={{ paddingTop: '5rem', paddingBottom: '5rem' }}>
-              <Dashboard onNavigate={handleNavigate} />
+      <div style={{ paddingTop: '5rem' }}>
+        {/* ADMIN DASHBOARD */}
+        {currentUser.role === 'admin' && currentPage === 'admin-dashboard' && (
+          <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+              <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '0.5rem', fontFamily: 'Playfair Display' }}>
+                Dashboard
+              </motion.h1>
+              <p style={{ fontSize: '1.125rem', color: 'rgba(255,255,255,0.6)', marginBottom: '3rem' }}>
+                Real-time operations center
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+                {[
+                  { label: 'Total Revenue', value: `€${totalRevenue}`, color: COLORS.success, icon: ArrowUpRight },
+                  { label: 'Pending', value: `€${pendingRevenue}`, color: COLORS.warning, icon: Clock },
+                  { label: 'Active Students', value: students.filter(s => s.status === 'active').length, color: COLORS.info, icon: Users },
+                  { label: 'Blocked', value: students.filter(s => s.status === 'blocked').length, color: COLORS.error, icon: Lock },
+                ].map((metric, idx) => (
+                  <motion.div key={idx} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="glass hover-lift" style={{ padding: '1.75rem', borderRadius: '1.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                      <div style={{ padding: '0.875rem', borderRadius: '1rem', background: `${metric.color}33` }}>
+                        <metric.icon size={28} color={metric.color} />
+                      </div>
+                      <div style={{ fontSize: '2.5rem', fontWeight: 900, color: metric.color }}>{metric.value}</div>
+                    </div>
+                    <div style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{metric.label}</div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="glass" style={{ padding: '2rem', borderRadius: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem' }}>📊 Recent Activity</h3>
+                {logs.slice(0, 5).map((log, idx) => (
+                  <motion.div key={log.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    style={{
+                      padding: '1rem', marginBottom: '0.5rem', background: 'rgba(255,255,255,0.03)',
+                      borderRadius: '0.75rem', borderLeft: `3px solid ${COLORS.accent}`
+                    }}>
+                    <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{log.action}</div>
+                    <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)' }}>
+                      {log.target} • {log.detail} • {log.timestamp}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </div>
-          </>
+          </div>
         )}
-        
-        {currentPage === 'login' && <LuxuryLogin onLogin={handleLogin} />}
-        {currentPage === 'dashboard' && currentUser && <Dashboard onNavigate={handleNavigate} />}
-        {currentPage === 'courses' && currentUser && <Dashboard onNavigate={handleNavigate} />}
-        {currentPage === 'logout' && handleLogout()}
+
+        {/* ADMIN STUDENTS */}
+        {currentUser.role === 'admin' && currentPage === 'admin-students' && (
+          <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+              <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Student Management</h1>
+              
+              <div className="glass" style={{ padding: '2rem', borderRadius: '1.5rem' }}>
+                {students.map((student, idx) => (
+                  <motion.div key={student.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '1.5rem', marginBottom: '1rem', background: 'rgba(255,255,255,0.03)',
+                      borderRadius: '0.75rem'
+                    }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '0.25rem' }}>{student.name}</div>
+                      <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>
+                        Level {student.level} • {student.progress}% • {student.email}
+                      </div>
+                      <div style={{ marginTop: '0.5rem' }}>
+                        <div style={{ height: '0.5rem', background: 'rgba(255,255,255,0.1)', borderRadius: '0.25rem', overflow: 'hidden', width: '200px' }}>
+                          <div style={{ width: `${student.progress}%`, height: '100%', background: COLORS.accent }} />
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      {student.status === 'blocked' ? (
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                          onClick={() => unlockStudent(student.id)} style={{
+                            padding: '0.5rem 1rem', background: `${COLORS.success}33`,
+                            border: 'none', borderRadius: '0.5rem', color: COLORS.success,
+                            cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem'
+                          }}>
+                          <Unlock size={16} />Activate
+                        </motion.button>
+                      ) : (
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                          onClick={() => blockStudent(student.id)} style={{
+                            padding: '0.5rem 1rem', background: `${COLORS.error}33`,
+                            border: 'none', borderRadius: '0.5rem', color: COLORS.error,
+                            cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem'
+                          }}>
+                          <Lock size={16} />Block
+                        </motion.button>
+                      )}
+                      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                        onClick={() => unlockModule(student.id, student.modulesUnlocked + 1)} style={{
+                          padding: '0.5rem 1rem', background: `${COLORS.info}33`,
+                          border: 'none', borderRadius: '0.5rem', color: COLORS.info,
+                          cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem'
+                        }}>
+                        <Unlock size={16} />Unlock Module
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ADMIN PAYMENTS */}
+        {currentUser.role === 'admin' && currentPage === 'admin-payments' && (
+          <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+              <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Payments & Finance</h1>
+              
+              <div className="glass" style={{ padding: '2rem', borderRadius: '1.5rem' }}>
+                {transactions.map((t, idx) => (
+                  <motion.div key={t.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '1rem', marginBottom: '0.5rem', background: 'rgba(255,255,255,0.03)',
+                      borderRadius: '0.75rem'
+                    }}>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{t.studentName}</div>
+                      <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>
+                        {t.concept} • {t.date} {t.time}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{
+                        fontSize: '1.125rem', fontWeight: 700,
+                        color: t.status === 'completed' ? COLORS.success : t.status === 'pending' ? COLORS.warning : COLORS.error
+                      }}>
+                        €{t.amount}
+                      </div>
+                      {t.status === 'pending' && (
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                          onClick={() => confirmPayment(t.id)} style={{
+                            padding: '0.5rem 1rem', background: `${COLORS.success}33`,
+                            border: 'none', borderRadius: '0.5rem', color: COLORS.success,
+                            cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem'
+                          }}>
+                          <CheckCircle size={16} />Confirm
+                        </motion.button>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ADMIN AUTHORIZATIONS */}
+        {currentUser.role === 'admin' && currentPage === 'admin-authorizations' && (
+          <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+              <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Access Authorizations</h1>
+              <div className="glass" style={{ padding: '2rem', borderRadius: '1.5rem' }}>
+                <p style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  Module-level access control system
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ADMIN COURSES */}
+        {currentUser.role === 'admin' && currentPage === 'admin-courses' && (
+          <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+              <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Courses & Modules</h1>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                {Object.entries(COURSE_LEVELS).map(([level, course]) => (
+                  <motion.div key={level} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                    className="glass hover-lift" style={{ borderRadius: '1.5rem', overflow: 'hidden' }}>
+                    <img src={course.image} alt={course.name} style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
+                    <div style={{ padding: '2rem' }}>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem' }}>{course.name}</div>
+                      <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)', marginBottom: '1rem' }}>
+                        Level {level} • {course.totalModules} modules • €{course.price}
+                      </div>
+                      <button style={{
+                        width: '100%', padding: '0.75rem', background: `${COLORS.accent}33`,
+                        border: 'none', borderRadius: '0.5rem', color: COLORS.accent,
+                        cursor: 'pointer', fontWeight: 700
+                      }}>View Details</button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ADMIN EXAMS */}
+        {currentUser.role === 'admin' && currentPage === 'admin-exams' && (
+          <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+              <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Exams</h1>
+              <div className="glass" style={{ padding: '2rem', borderRadius: '1.5rem' }}>
+                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Exam review and grading system</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ADMIN AUTOMATIONS */}
+        {currentUser.role === 'admin' && currentPage === 'admin-automations' && (
+          <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+              <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Automations</h1>
+              <div className="glass" style={{ padding: '2rem', borderRadius: '1.5rem' }}>
+                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Automated process control</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ADMIN HISTORY */}
+        {currentUser.role === 'admin' && currentPage === 'admin-history' && (
+          <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+              <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>History</h1>
+              <div className="glass" style={{ padding: '2rem', borderRadius: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem' }}>All Activity Logs ({logs.length})</h3>
+                {logs.map((log, idx) => (
+                  <div key={log.id} style={{
+                    padding: '1rem', marginBottom: '0.5rem', background: 'rgba(255,255,255,0.03)',
+                    borderRadius: '0.75rem'
+                  }}>
+                    <div style={{ fontWeight: 600 }}>{log.action} - {log.target}</div>
+                    <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)' }}>
+                      {log.detail} • {log.user} • {log.timestamp}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STUDENT DASHBOARD */}
+        {currentUser.role === 'student' && studentData && currentPage === 'student-dashboard' && (
+          <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+              <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 900, marginBottom: '0.5rem', fontFamily: 'Playfair Display' }}>
+                Hello, {studentData.name.split(' ')[0]}! 👋
+              </motion.h1>
+              <p style={{ fontSize: '1.125rem', color: 'rgba(255,255,255,0.6)', marginBottom: '3rem' }}>
+                Continue your path to sports excellence
+              </p>
+
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                className="glass hover-lift" style={{ padding: '2.5rem', borderRadius: '1.5rem', marginBottom: '2rem' }}>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem' }}>🎯 Your Overall Progress</h3>
+                
+                <div style={{ marginBottom: '2rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                    <span style={{ fontWeight: 600 }}>Level {studentData.level}: {currentCourse.name}</span>
+                    <span style={{ color: COLORS.accent, fontWeight: 900, fontSize: '1.5rem' }}>{studentData.progress}%</span>
+                  </div>
+                  <div style={{ height: '1.5rem', background: 'rgba(255,255,255,0.1)', borderRadius: '1rem', overflow: 'hidden' }}>
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${studentData.progress}%` }}
+                      transition={{ duration: 1, delay: 0.5 }}
+                      style={{
+                        height: '100%',
+                        background: `linear-gradient(90deg, ${COLORS.accent}, #FF6B35)`,
+                        borderRadius: '1rem'
+                      }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+                  {[
+                    { label: 'Modules Completed', value: studentData.modulesUnlocked, color: COLORS.success },
+                    { label: 'Exams Passed', value: studentData.examsPassed.length, color: COLORS.info },
+                    { label: 'Modules Remaining', value: currentCourse.totalModules - studentData.modulesUnlocked, color: COLORS.warning },
+                  ].map((stat, idx) => (
+                    <div key={idx} className="glass-light" style={{ padding: '1rem', borderRadius: '0.75rem', textAlign: 'center' }}>
+                      <div style={{ fontSize: '2rem', fontWeight: 900, color: stat.color }}>{stat.value}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                className="glass hover-lift" style={{
+                  padding: '2rem', borderRadius: '1.5rem',
+                  background: `linear-gradient(135deg, ${COLORS.accent}1A, rgba(255,107,53,0.05))`,
+                  border: `2px solid ${COLORS.accent}4D`
+                }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                  <div style={{
+                    width: '4rem', height: '4rem', borderRadius: '50%',
+                    background: `linear-gradient(135deg, ${COLORS.accent}, #EF4444)`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <Flame size={32} color="white" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.875rem', color: COLORS.accent, fontWeight: 700, marginBottom: '0.25rem' }}>
+                      📚 NEXT RECOMMENDED STEP
+                    </div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.25rem' }}>
+                      Module {studentData.currentModule}: {currentCourse.modules[studentData.currentModule - 1]?.title || 'Complete!'}
+                    </div>
+                    <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>
+                      {studentData.currentModule <= currentCourse.totalModules ? 'Continue your training!' : 'All modules completed! 🎉'}
+                    </div>
+                  </div>
+                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    onClick={() => handleNavigate('student-content')} style={{
+                      padding: '1rem 2rem', background: `linear-gradient(135deg, ${COLORS.accent}, #EF4444)`,
+                      border: 'none', borderRadius: '0.75rem', color: 'white',
+                      fontWeight: 700, cursor: 'pointer'
+                    }}>
+                    Continue →
+                  </motion.button>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        )}
+
+        {/* STUDENT COURSES */}
+        {currentUser.role === 'student' && studentData && currentPage === 'student-courses' && (
+          <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+              <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>My Courses</h1>
+              
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                className="glass hover-lift" style={{ borderRadius: '1.5rem', overflow: 'hidden' }}>
+                <img src={currentCourse.image} alt={currentCourse.name}
+                  style={{ width: '100%', height: '300px', objectFit: 'cover' }} />
+                <div style={{ padding: '2rem' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>
+                    {currentCourse.name}
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)', marginBottom: '1rem' }}>
+                    Level {studentData.level} • {currentCourse.totalModules} modules
+                  </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <div style={{ height: '0.5rem', background: 'rgba(255,255,255,0.1)', borderRadius: '0.25rem', overflow: 'hidden' }}>
+                      <div style={{ width: `${studentData.progress}%`, height: '100%', background: COLORS.accent }} />
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', marginTop: '0.25rem' }}>
+                      {studentData.progress}% completed
+                    </div>
+                  </div>
+                  <button onClick={() => handleNavigate('student-content')} style={{
+                    width: '100%', padding: '1rem', background: `${COLORS.accent}33`,
+                    border: 'none', borderRadius: '0.75rem', color: COLORS.accent,
+                    cursor: 'pointer', fontWeight: 700, fontSize: '1rem'
+                  }}>
+                    Access Course Content
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        )}
+
+        {/* STUDENT CONTENT */}
+        {currentUser.role === 'student' && studentData && currentPage === 'student-content' && (
+          <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+              <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Course Content</h1>
+              
+              <div className="glass" style={{ padding: '2rem', borderRadius: '1.5rem' }}>
+                <div style={{ display: 'grid', gap: '1rem' }}>
+                  {currentCourse.modules.map((module, idx) => {
+                    const isUnlocked = idx + 1 <= studentData.modulesUnlocked;
+                    const isPassed = studentData.examsPassed.includes(idx + 1);
+                    
+                    return (
+                      <motion.div key={module.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                        style={{
+                          padding: '1.5rem', background: isUnlocked ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+                          borderRadius: '0.75rem', display: 'flex', alignItems: 'center', gap: '1rem',
+                          opacity: isUnlocked ? 1 : 0.5,
+                          border: `1px solid ${isUnlocked ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'}`
+                        }}>
+                        <div style={{
+                          width: '3rem', height: '3rem', borderRadius: '0.75rem',
+                          background: isPassed ? `${COLORS.success}33` : isUnlocked ? `${COLORS.accent}33` : 'rgba(255,255,255,0.05)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '1.25rem', fontWeight: 900,
+                          color: isPassed ? COLORS.success : isUnlocked ? COLORS.accent : 'rgba(255,255,255,0.3)'
+                        }}>
+                          {isPassed ? <Check size={24} /> : isUnlocked ? (idx + 1) : <Lock size={20} />}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>
+                            {module.title}
+                          </div>
+                          <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>
+                            {module.duration} • {module.type === 'video' ? '📹 Video' : '📄 PDF'}
+                          </div>
+                        </div>
+                        {isUnlocked && !isPassed && (
+                          <button onClick={() => handleNavigate('student-exams')} style={{
+                            padding: '0.75rem 1.5rem', background: `${COLORS.accent}33`,
+                            border: 'none', borderRadius: '0.5rem', color: COLORS.accent,
+                            cursor: 'pointer', fontWeight: 700
+                          }}>
+                            Take Exam
+                          </button>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STUDENT EXAMS */}
+        {currentUser.role === 'student' && studentData && currentPage === 'student-exams' && (
+          <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+              <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Exam Center</h1>
+              
+              {!examInProgress ? (
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                  className="glass hover-lift" style={{ padding: '3rem', borderRadius: '1.5rem', textAlign: 'center' }}>
+                  <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 2, repeat: Infinity }}>
+                    <Trophy size={100} color={COLORS.accent} style={{ margin: '0 auto 1.5rem' }} />
+                  </motion.div>
+                  <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '1rem' }}>
+                    Module {studentData.currentModule} Exam
+                  </h2>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>
+                    5 questions • Pass with 70% • Unlimited time
+                  </p>
+                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    onClick={() => startExam(studentData.level)} style={{
+                      padding: '1.25rem 3rem', background: `linear-gradient(135deg, ${COLORS.accent}, #EF4444)`,
+                      border: 'none', borderRadius: '1rem', color: 'white',
+                      fontSize: '1.125rem', fontWeight: 800, cursor: 'pointer',
+                      boxShadow: `0 10px 40px ${COLORS.accent}40`
+                    }}>
+                    Start Exam
+                  </motion.button>
+                </motion.div>
+              ) : (
+                <div className="glass" style={{ padding: '2rem', borderRadius: '1.5rem' }}>
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '2rem' }}>
+                    Answer all questions
+                  </h3>
+                  {EXAM_QUESTIONS[examInProgress].map((q, idx) => (
+                    <div key={q.id} style={{ marginBottom: '2rem' }}>
+                      <div style={{ fontWeight: 700, marginBottom: '1rem' }}>
+                        {idx + 1}. {q.question}
+                      </div>
+                      <div style={{ display: 'grid', gap: '0.5rem' }}>
+                        {q.options.map((option, optIdx) => (
+                          <motion.button key={optIdx} whileHover={{ x: 4 }}
+                            onClick={() => {
+                              const newAnswers = [...examAnswers];
+                              newAnswers[idx] = optIdx;
+                              setExamAnswers(newAnswers);
+                            }}
+                            style={{
+                              padding: '1rem', background: examAnswers[idx] === optIdx ? `${COLORS.accent}33` : 'rgba(255,255,255,0.05)',
+                              border: `1px solid ${examAnswers[idx] === optIdx ? COLORS.accent : 'rgba(255,255,255,0.1)'}`,
+                              borderRadius: '0.75rem', color: 'white', cursor: 'pointer',
+                              textAlign: 'left', fontWeight: examAnswers[idx] === optIdx ? 700 : 400
+                            }}>
+                            {option}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                    onClick={submitExam}
+                    disabled={examAnswers.length < EXAM_QUESTIONS[examInProgress].length}
+                    style={{
+                      width: '100%', padding: '1rem', background: examAnswers.length < EXAM_QUESTIONS[examInProgress].length ? 'rgba(255,255,255,0.1)' : `linear-gradient(135deg, ${COLORS.success}, #059669)`,
+                      border: 'none', borderRadius: '0.75rem', color: 'white',
+                      fontSize: '1rem', fontWeight: 800, cursor: examAnswers.length < EXAM_QUESTIONS[examInProgress].length ? 'not-allowed' : 'pointer'
+                    }}>
+                    Submit Exam
+                  </motion.button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* STUDENT CERTIFICATES */}
+        {currentUser.role === 'student' && studentData && currentPage === 'student-certificates' && (
+          <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+              <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>My Certificates</h1>
+              
+              {studentData.progress === 100 ? (
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                  className="glass hover-lift" style={{ padding: '3rem', borderRadius: '1.5rem', textAlign: 'center' }}>
+                  <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 2, repeat: Infinity }}>
+                    <Award size={100} color={COLORS.accent} style={{ margin: '0 auto 2rem' }} />
+                  </motion.div>
+                  <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '1rem' }}>
+                    Certificate Available!
+                  </h2>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>
+                    You completed 100% of {currentCourse.name}
+                  </p>
+                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    style={{
+                      padding: '1.25rem 3rem', background: `linear-gradient(135deg, ${COLORS.accent}, #EF4444)`,
+                      border: 'none', borderRadius: '1rem', color: 'white',
+                      fontSize: '1.125rem', fontWeight: 800, cursor: 'pointer',
+                      display: 'inline-flex', alignItems: 'center', gap: '0.75rem'
+                    }}>
+                    <Download size={24} />
+                    Download Certificate
+                  </motion.button>
+                </motion.div>
+              ) : (
+                <div className="glass" style={{ padding: '3rem', borderRadius: '1.5rem', textAlign: 'center' }}>
+                  <Lock size={80} color="rgba(255,255,255,0.3)" style={{ margin: '0 auto 1.5rem' }} />
+                  <h2 style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1.5rem', marginBottom: '1rem' }}>
+                    Certificate Not Available
+                  </h2>
+                  <p style={{ color: 'rgba(255,255,255,0.5)' }}>
+                    Complete 100% of the course to unlock your official certificate
+                  </p>
+                  <div style={{ marginTop: '2rem' }}>
+                    <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)', marginBottom: '0.5rem' }}>
+                      Your current progress:
+                    </div>
+                    <div style={{ fontSize: '3rem', fontWeight: 900, color: COLORS.accent }}>
+                      {studentData.progress}%
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
+      <AIAssistant />
+      <AnimatePresence>
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      </AnimatePresence>
     </div>
   );
 }
