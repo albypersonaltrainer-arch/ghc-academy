@@ -386,10 +386,30 @@ const Login = ({ onLogin, showAdminButton }) => {
         <h2 style={{
           fontSize: '2rem', fontWeight: 900, color: 'white',
           marginBottom: '0.5rem', fontFamily: 'Playfair Display, serif'
-        }}>GHC Academy</h2>
-        <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>
-          Select your access type
-        </p>
+       <div 
+  onClick={() => setCurrentPage('store')}
+  style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem' }}
+>
+  <img 
+    src="/logo-limpio.png" 
+    alt="GHC Nutrition" 
+    style={{ 
+      height: '50px', 
+      width: '50px', 
+      objectFit: 'contain',
+      borderRadius: '50%',
+      filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
+    }} 
+  />
+  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+    <span style={{ fontSize: '1rem', fontWeight: 900, color: 'white' }}>
+      GHC ACADEMY
+    </span>
+    <span style={{ color: COLORS.accent, fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+      SPORT THROUGH SCIENCE. HEALTH THROUGH PERFORMANCE.
+    </span>
+  </div>
+</div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {showAdminButton && (
