@@ -396,8 +396,7 @@ const Login = ({ onLogin, showAdminButton }) => {
         <h2 style={{
           fontSize: '2rem', fontWeight: 900, color: 'white',
           marginBottom: '0.5rem', fontFamily: 'Playfair Display, serif'
-       <div 
-  onClick={() => setCurrentPage('store')}
+       <div onClick={() => onNavigate('store')}
   style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem' }}
 >
   <img 
