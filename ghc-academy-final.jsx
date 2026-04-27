@@ -206,18 +206,28 @@ const Header = ({ onMenuToggle, currentUser, onLogout, onNavigate }) => (
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
              onClick={() => onNavigate('store')}>
-          <div style={{
-            width: '2.5rem', height: '2.5rem', borderRadius: '50%',
-            background: `linear-gradient(135deg, ${COLORS.accent}, #EF4444)`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white', fontWeight: 900, fontSize: '1.125rem',
-            boxShadow: `0 0 20px ${COLORS.accent}40`
-          }}>G</div>
-          <div>
-           <div 
-  onClick={() => setCurrentPage('store')}
-  style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem' }}
->
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
+     onClick={() => onNavigate('store')}>
+  <img
+    src="./logo-limpio.png"
+    alt="GHC Nutrition"
+    style={{
+      height: '50px',
+      width: '50px',
+      objectFit: 'contain',
+      borderRadius: '50%',
+      filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
+    }}
+  />
+  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+    <span style={{ fontSize: '1rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>
+      GHC ACADEMY
+    </span>
+    <span style={{ color: COLORS.accent, fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+      SPORT THROUGH SCIENCE. HEALTH THROUGH PERFORMANCE.
+    </span>
+  </div>
+</div>
   <img 
     src="/logo-limpio.png" 
     alt="GHC Nutrition" 
