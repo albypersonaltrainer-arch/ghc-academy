@@ -2,33 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ChevronRight, BookOpen, Award, Users, Clock, Zap, TrendingUp, Bell, Settings, LogOut, Home, GraduationCap, DollarSign, AlertCircle, CheckCircle, Lock, Unlock, Brain, BarChart3, CreditCard, FileText, Activity, ArrowUpRight, PlayCircle, Trophy, Flame, Check, AlertTriangle, Download, Video, FileQuestion, ShoppingCart, Store } from 'lucide-react';
 
-const globalStyles = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap');
-  
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', sans-serif; overflow-x: hidden; background: #0A0A0A; }
-
-  .glass {
-    background: rgba(26, 26, 26, 0.8);
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .glass-light {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-  }
-
-  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-  
-  .hover-lift { transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
-  .hover-lift:hover { transform: translateY(-8px); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4) !important; }
-`;
-
 const COLORS = {
   accent: '#E26A1B',
   success: '#10B981',
@@ -206,48 +179,13 @@ const Header = ({ onMenuToggle, currentUser, onLogout, onNavigate }) => (
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
              onClick={() => onNavigate('store')}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
-     onClick={() => onNavigate('store')}>
-  <img
-    src="./logo-limpio.png"
-    alt="GHC Nutrition"
-    style={{
-      height: '50px',
-      width: '50px',
-      objectFit: 'contain',
-      borderRadius: '50%',
-      filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
-    }}
-  />
-  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-    <span style={{ fontSize: '1rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>
-      GHC ACADEMY
-    </span>
-    <span style={{ color: COLORS.accent, fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-      SPORT THROUGH SCIENCE. HEALTH THROUGH PERFORMANCE.
-    </span>
-  </div>
-</div>
-  <img 
-    src="/logo-limpio.png" 
-    alt="GHC Nutrition" 
-    style={{ 
-      height: '50px', 
-      width: '50px', 
-      objectFit: 'contain',
-      borderRadius: '50%',
-      filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
-    }} 
-  />
-  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-    <span style={{ fontSize: '1rem', fontWeight: 900, color: 'white' }}>
-      GHC ACADEMY
-    </span>
-    <span style={{ color: COLORS.accent, fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-      SPORT THROUGH SCIENCE. HEALTH THROUGH PERFORMANCE.
-    </span>
-  </div>
-</div>
+          <img src="/logo-limpio.png" alt="Logo" style={{ height: '50px', width: '50px', objectFit: 'contain', borderRadius: '50%' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <span style={{ fontSize: '1rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>GHC ACADEMY</span>
+            <span style={{ color: '#C1FF00', fontSize: '0.625rem', fontWeight: 700 }}>SPORT THROUGH SCIENCE.</span>
+          </div>
+        </div>
+      </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
         {currentUser ? (
@@ -393,32 +331,10 @@ const Login = ({ onLogin, showAdminButton }) => {
             boxShadow: `0 0 40px ${COLORS.accent}80`
           }}>G</motion.div>
 
-        <h2 style={{
-          fontSize: '2rem', fontWeight: 900, color: 'white',
-          marginBottom: '0.5rem', fontFamily: 'Playfair Display, serif'
-       <div onClick={() => onNavigate('store')}
-  style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem' }}
->
-  <img 
-    src="/logo-limpio.png" 
-    alt="GHC Nutrition" 
-    style={{ 
-      height: '50px', 
-      width: '50px', 
-      objectFit: 'contain',
-      borderRadius: '50%',
-      filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
-    }} 
-  />
-  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-    <span style={{ fontSize: '1rem', fontWeight: 900, color: 'white' }}>
-      GHC ACADEMY
-    </span>
-    <span style={{ color: COLORS.accent, fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-      SPORT THROUGH SCIENCE. HEALTH THROUGH PERFORMANCE.
-    </span>
-  </div>
-</div>
+        <h2 style={{ fontSize: '2rem', fontWeight: 900, color: 'white', marginBottom: '0.5rem' }}>Sign in</h2>
+        <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>
+          Select your access type
+        </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {showAdminButton && (
@@ -672,8 +588,6 @@ export default function GHCAcademy() {
 
   return (
     <div style={{ background: '#0A0A0A', minHeight: '100vh' }}>
-      <style>{globalStyles}</style>
-      
       {currentUser && (
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)}
           currentPage={currentPage} onNavigate={handleNavigate} role={currentUser.role} />
@@ -746,19 +660,22 @@ export default function GHCAcademy() {
                   { label: 'Pending', value: `€${pendingRevenue}`, color: COLORS.warning, icon: Clock },
                   { label: 'Active Students', value: students.filter(s => s.status === 'active').length, color: COLORS.info, icon: Users },
                   { label: 'Blocked', value: students.filter(s => s.status === 'blocked').length, color: COLORS.error, icon: Lock },
-                ].map((metric, idx) => (
-                  <motion.div key={idx} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="glass hover-lift" style={{ padding: '1.75rem', borderRadius: '1.25rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                      <div style={{ padding: '0.875rem', borderRadius: '1rem', background: `${metric.color}33` }}>
-                        <metric.icon size={28} color={metric.color} />
+                ].map((metric, idx) => {
+                  const Icon = metric.icon;
+                  return (
+                    <motion.div key={idx} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="glass hover-lift" style={{ padding: '1.75rem', borderRadius: '1.25rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                        <div style={{ padding: '0.875rem', borderRadius: '1rem', background: `${metric.color}33` }}>
+                          <Icon size={28} color={metric.color} />
+                        </div>
+                        <div style={{ fontSize: '2.5rem', fontWeight: 900, color: metric.color }}>{metric.value}</div>
                       </div>
-                      <div style={{ fontSize: '2.5rem', fontWeight: 900, color: metric.color }}>{metric.value}</div>
-                    </div>
-                    <div style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{metric.label}</div>
-                  </motion.div>
-                ))}
+                      <div style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{metric.label}</div>
+                    </motion.div>
+                  );
+                })}
               </div>
 
               <div className="glass" style={{ padding: '2rem', borderRadius: '1.5rem' }}>
