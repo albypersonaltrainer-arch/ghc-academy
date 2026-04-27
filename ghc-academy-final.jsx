@@ -624,6 +624,58 @@ export default function GHCAcademy() {
         currentUser={currentUser} onLogout={handleLogout} />
 
       <div style={{ paddingTop: '5rem' }}>
+        {/* SECCIÓN TIENDA PÚBLICA / LANDING */}
+{currentPage === 'store' && (
+  <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
+    <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+      <motion.h1 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }}
+        style={{ fontSize: '3.5rem', fontWeight: 900, marginBottom: '1rem', fontFamily: 'Playfair Display', textAlign: 'center' }}
+      >
+        GHC Academy Store
+      </motion.h1>
+      <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '3rem', textAlign: 'center', fontSize: '1.2rem' }}>
+        Aprende, inspírate y domina nuevas habilidades.
+      </p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+        {Object.entries(COURSE_LEVELS || {}).map(([level, course]) => (
+          <motion.div key={level} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            className="glass hover-lift" style={{ borderRadius: '1.5rem', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <img src={course.image} alt={course.name} style={{ width: '100%', height: '220px', objectFit: 'cover' }} />
+            <div style={{ padding: '2rem' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.75rem' }}>{course.name}</div>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
+                Acceso completo a todos los materiales y soporte premium.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '1.75rem', fontWeight: 900, color: COLORS.accent }}>€{course.price}</span>
+                <button 
+                  onClick={() => {
+                    if (!currentUser) {
+                      showToast('Inicia sesión como alumno para comprar', 'info');
+                      setCurrentPage('login');
+                    } else {
+                      showToast('Procesando compra...', 'success');
+                    }
+                  }}
+                  style={{
+                    padding: '0.75rem 1.5rem', 
+                    background: `linear-gradient(135deg, ${COLORS.accent}, #F43F5E)`,
+                    border: 'none', borderRadius: '0.75rem', color: 'white', fontWeight: 800, cursor: 'pointer'
+                  }}
+                >
+                  Comprar ahora
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
         {/* ADMIN DASHBOARD */}
         {currentUser.role === 'admin' && currentPage === 'admin-dashboard' && (
           <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
