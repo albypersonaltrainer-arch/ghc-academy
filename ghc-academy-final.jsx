@@ -603,7 +603,7 @@ export default function GHCAcademy() {
   return (
     <>
       <style>{globalStyles}</style>
-      <Login onLogin={handleLogin} />
+     {currentPage === 'login' && !currentUser && <Login onLogin={handleLogin} />}
     </>
   );
 }
