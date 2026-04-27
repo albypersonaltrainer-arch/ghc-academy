@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ChevronRight, BookOpen, Award, Users, Clock, Zap, TrendingUp, Bell, Settings, LogOut, Home, GraduationCap, DollarSign, AlertCircle, CheckCircle, Lock, Unlock, Brain, BarChart3, CreditCard, FileText, Activity, ArrowUpRight, PlayCircle, Trophy, Flame, Check, AlertTriangle, Download, Video, FileQuestion } from 'lucide-react';
+import { Menu, X, ChevronRight, BookOpen, Award, Users, Clock, Zap, TrendingUp, Bell, Settings, LogOut, Home, GraduationCap, DollarSign, AlertCircle, CheckCircle, Lock, Unlock, Brain, BarChart3, CreditCard, FileText, Activity, ArrowUpRight, PlayCircle, Trophy, Flame, Check, AlertTriangle, Download, Video, FileQuestion, ShoppingCart, Store } from 'lucide-react';
 
-// ============================================================================
-// GLOBAL STYLES
-// ============================================================================
 const globalStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap');
@@ -40,9 +37,6 @@ const COLORS = {
   info: '#3B82F6',
 };
 
-// ============================================================================
-// IN-MEMORY DATABASE
-// ============================================================================
 const INITIAL_STUDENTS = [
   { id: 1, name: 'Juan Pérez García', email: 'alumno@demo.com', password: '123', phone: '+34 612 345 678', level: 1, progress: 67, status: 'active', payment: 'paid', amount: 349, enrolled: '2024-01-15', lastAccess: '2024-04-26', modulesUnlocked: 8, examsPassed: [1, 2, 3, 4, 5, 6, 7, 8], currentModule: 9 },
   { id: 2, name: 'María García López', email: 'maria@demo.com', password: '123', phone: '+34 623 456 789', level: 1, progress: 34, status: 'active', payment: 'installment', amount: 399, enrolled: '2024-02-20', lastAccess: '2024-04-25', modulesUnlocked: 5, examsPassed: [1, 2, 3, 4, 5], currentModule: 6 },
@@ -171,10 +165,6 @@ const EXAM_QUESTIONS = {
   ]
 };
 
-// ============================================================================
-// COMPONENTS
-// ============================================================================
-
 const Toast = ({ message, type, onClose }) => {
   useEffect(() => {
     const timer = setTimeout(onClose, 3000);
@@ -196,7 +186,7 @@ const Toast = ({ message, type, onClose }) => {
   );
 };
 
-const Header = ({ onMenuToggle, currentUser, onLogout }) => (
+const Header = ({ onMenuToggle, currentUser, onLogout, onNavigate }) => (
   <header className="glass" style={{
     position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
     background: 'rgba(10, 10, 10, 0.95)', backdropFilter: 'blur(40px)',
@@ -205,14 +195,17 @@ const Header = ({ onMenuToggle, currentUser, onLogout }) => (
   }}>
     <div style={{ maxWidth: '90rem', margin: '0 auto', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <button onClick={onMenuToggle} style={{
-          background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white',
-          cursor: 'pointer', padding: '0.75rem', borderRadius: '0.75rem', display: 'flex'
-        }}>
-          <Menu size={22} />
-        </button>
+        {currentUser && (
+          <button onClick={onMenuToggle} style={{
+            background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white',
+            cursor: 'pointer', padding: '0.75rem', borderRadius: '0.75rem', display: 'flex'
+          }}>
+            <Menu size={22} />
+          </button>
+        )}
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
+             onClick={() => onNavigate('store')}>
           <div style={{
             width: '2.5rem', height: '2.5rem', borderRadius: '50%',
             background: `linear-gradient(135deg, ${COLORS.accent}, #EF4444)`,
@@ -223,23 +216,37 @@ const Header = ({ onMenuToggle, currentUser, onLogout }) => (
           <div>
             <div style={{ color: 'white', fontWeight: 900, fontSize: '1rem' }}>GHC ACADEMY</div>
             <div style={{ color: COLORS.accent, fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.1em' }}>
-              {currentUser.role === 'admin' ? 'ADMIN PANEL' : 'STUDENT PORTAL'}
+              {currentUser ? (currentUser.role === 'admin' ? 'ADMIN PANEL' : 'STUDENT PORTAL') : 'SPORTS TRAINING'}
             </div>
           </div>
         </div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ color: 'white', fontSize: '0.875rem', fontWeight: 600 }}>{currentUser.name}</div>
-        <button onClick={onLogout} style={{
-          padding: '0.75rem 1rem', background: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '0.75rem',
-          color: COLORS.error, cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem',
-          display: 'flex', alignItems: 'center', gap: '0.5rem'
-        }}>
-          <LogOut size={18} />
-          Logout
-        </button>
+        {currentUser ? (
+          <>
+            <div style={{ color: 'white', fontSize: '0.875rem', fontWeight: 600 }}>{currentUser.name}</div>
+            <button onClick={onLogout} style={{
+              padding: '0.75rem 1rem', background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '0.75rem',
+              color: COLORS.error, cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem',
+              display: 'flex', alignItems: 'center', gap: '0.5rem'
+            }}>
+              <LogOut size={18} />
+              Logout
+            </button>
+          </>
+        ) : (
+          <button onClick={() => onNavigate('login')} style={{
+            padding: '0.75rem 1.5rem', background: `linear-gradient(135deg, ${COLORS.accent}, #EF4444)`,
+            border: 'none', borderRadius: '0.75rem',
+            color: 'white', cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem',
+            display: 'flex', alignItems: 'center', gap: '0.5rem'
+          }}>
+            <GraduationCap size={18} />
+            Login
+          </button>
+        )}
       </div>
     </div>
   </header>
@@ -327,15 +334,12 @@ const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, role }) => {
 const Login = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState(null);
-
-  // Mostrar botón admin solo si la URL tiene ?admin=1
   const [showAdminButton, setShowAdminButton] = useState(false);
+
   useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('admin') === '1') setShowAdminButton(true);
-    } catch (e) {
-      // ignore
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === '1') {
+      setShowAdminButton(true);
     }
   }, []);
 
@@ -379,48 +383,27 @@ const Login = ({ onLogin }) => {
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-            onClick={() => handleLogin('admin')} disabled={loading}
-            className="hover-lift" style={{
-              width: '100%', padding: '1.5rem',
-              background: type === 'admin' && loading ? 'rgba(59,130,246,0.2)' : `linear-gradient(135deg, ${COLORS.info}, #1D4ED8)`,
-              border: 'none', borderRadius: '1rem', color: 'white',
-              fontSize: '1.125rem', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem'
-            }}>
-            {type === 'admin' && loading ? (
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                style={{
-                  width: '1.5rem', height: '1.5rem', border: '2px solid rgba(255,255,255,0.3)',
-                  borderTopColor: 'white', borderRadius: '50%'
-                }} />
-            ) : (
-              {showAdminButton && (
-  <motion.button
-    whileHover={{ scale: 1.02 }}
-    whileTap={{ scale: 0.98 }}
-    onClick={() => handleLogin('admin')}
-    disabled={loading}
-    className="hover-lift"
-    style={{
-      width: '100%',
-      padding: '1.5rem',
-      background: type === 'admin' && loading ? 'rgba(59,130,246,0.2)' : `linear-gradient(135deg, ${COLORS.info}, #1D4ED8)`,
-      border: 'none',
-      borderRadius: '1rem',
-      color: 'white',
-      fontSize: '1.125rem',
-      fontWeight: 800,
-      cursor: loading ? 'not-allowed' : 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '0.75rem'
-    }}
-  >
-    {type === 'admin' && loading ? (
-            )}
-          </motion.button>
+          {showAdminButton && (
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              onClick={() => handleLogin('admin')} disabled={loading}
+              className="hover-lift" style={{
+                width: '100%', padding: '1.5rem',
+                background: type === 'admin' && loading ? 'rgba(59,130,246,0.2)' : `linear-gradient(135deg, ${COLORS.info}, #1D4ED8)`,
+                border: 'none', borderRadius: '1rem', color: 'white',
+                fontSize: '1.125rem', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem'
+              }}>
+              {type === 'admin' && loading ? (
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  style={{
+                    width: '1.5rem', height: '1.5rem', border: '2px solid rgba(255,255,255,0.3)',
+                    borderTopColor: 'white', borderRadius: '50%'
+                  }} />
+              ) : (
+                <><Settings size={24} />Administrator Access<ChevronRight size={24} /></>
+              )}
+            </motion.button>
+          )}
 
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
             onClick={() => handleLogin('student')} disabled={loading}
@@ -499,8 +482,6 @@ const AIAssistant = () => {
   );
 };
 
-// CONTINUE IN NEXT MESSAGE...
-
 export default function GHCAcademy() {
   const [currentPage, setCurrentPage] = useState('store');
   const [currentUser, setCurrentUser] = useState(null);
@@ -538,10 +519,39 @@ export default function GHCAcademy() {
 
   const handleLogout = () => {
     setCurrentUser(null);
-    handleNavigate('login');
+    handleNavigate('store');
   };
 
-  // Admin Actions
+  const handlePurchase = (level) => {
+    if (!currentUser) {
+      setCurrentPage('login');
+      showToast('Please login as a student to purchase', 'info');
+      return;
+    }
+
+    if (currentUser.role !== 'student') {
+      showToast('Only students can purchase courses', 'error');
+      return;
+    }
+
+    const course = COURSE_LEVELS[level];
+    const newTransaction = {
+      id: Date.now(),
+      studentId: currentUser.studentId,
+      studentName: currentUser.name,
+      amount: course.price,
+      status: 'completed',
+      method: 'Store Purchase',
+      date: new Date().toISOString().split('T')[0],
+      concept: `${course.name} - Store Purchase`,
+      time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+    };
+    
+    setTransactions(prev => [newTransaction, ...prev]);
+    addLog('Course Purchased', currentUser.name, `Purchased ${course.name} for €${course.price}`);
+    showToast(`Successfully purchased ${course.name}! 🎉`);
+  };
+
   const blockStudent = (id) => {
     setStudents(prev => prev.map(s => s.id === id ? { ...s, status: 'blocked' } : s));
     const student = students.find(s => s.id === id);
@@ -570,7 +580,6 @@ export default function GHCAcademy() {
     showToast(`Module unlocked for ${student.name}`);
   };
 
-  // Student Actions
   const startExam = (level) => {
     setExamInProgress(level);
     setExamAnswers([]);
@@ -599,85 +608,71 @@ export default function GHCAcademy() {
     setExamAnswers([]);
   };
 
-  if (currentPage === 'login' && !currentUser) {
-  return (
-    <>
-      <style>{globalStyles}</style>
-     {currentPage === 'login' && !currentUser && <Login onLogin={handleLogin} />}
-    </>
-  );
-}
-
   const totalRevenue = transactions.filter(t => t.status === 'completed').reduce((sum, t) => sum + t.amount, 0);
   const pendingRevenue = transactions.filter(t => t.status === 'pending').reduce((sum, t) => sum + t.amount, 0);
-  const studentData = currentUser.role === 'student' ? students.find(s => s.id === currentUser.studentId) : null;
+  const studentData = currentUser?.role === 'student' ? students.find(s => s.id === currentUser.studentId) : null;
   const currentCourse = studentData ? COURSE_LEVELS[studentData.level] : null;
 
   return (
     <div style={{ background: '#0A0A0A', minHeight: '100vh' }}>
       <style>{globalStyles}</style>
       
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)}
-        currentPage={currentPage} onNavigate={handleNavigate} role={currentUser.role} />
+      {currentUser && (
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)}
+          currentPage={currentPage} onNavigate={handleNavigate} role={currentUser.role} />
+      )}
       
       <Header onMenuToggle={() => setSidebarOpen(true)}
-        currentUser={currentUser} onLogout={handleLogout} />
+        currentUser={currentUser} onLogout={handleLogout} onNavigate={handleNavigate} />
 
       <div style={{ paddingTop: '5rem' }}>
-        {/* SECCIÓN TIENDA PÚBLICA / LANDING */}
-{currentPage === 'store' && (
-  <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
-    <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
-      <motion.h1 
-        initial={{ opacity: 0, y: 20 }} 
-        animate={{ opacity: 1, y: 0 }}
-        style={{ fontSize: '3.5rem', fontWeight: 900, marginBottom: '1rem', fontFamily: 'Playfair Display', textAlign: 'center' }}
-      >
-        GHC Academy Store
-      </motion.h1>
-      <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '3rem', textAlign: 'center', fontSize: '1.2rem' }}>
-        Aprende, inspírate y domina nuevas habilidades.
-      </p>
+        {currentPage === 'login' && !currentUser && <Login onLogin={handleLogin} />}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
-        {Object.entries(COURSE_LEVELS || {}).map(([level, course]) => (
-          <motion.div key={level} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="glass hover-lift" style={{ borderRadius: '1.5rem', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <img src={course.image} alt={course.name} style={{ width: '100%', height: '220px', objectFit: 'cover' }} />
-            <div style={{ padding: '2rem' }}>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.75rem' }}>{course.name}</div>
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
-                Acceso completo a todos los materiales y soporte premium.
+        {currentPage === 'store' && (
+          <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
+              <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '0.5rem', fontFamily: 'Playfair Display' }}>
+                Course Store
+              </motion.h1>
+              <p style={{ fontSize: '1.125rem', color: 'rgba(255,255,255,0.6)', marginBottom: '3rem' }}>
+                Choose your path to excellence
               </p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '1.75rem', fontWeight: 900, color: COLORS.accent }}>€{course.price}</span>
-                <button 
-                  onClick={() => {
-                    if (!currentUser) {
-                      showToast('Inicia sesión como alumno para comprar', 'info');
-                      setCurrentPage('login');
-                    } else {
-                      showToast('Procesando compra...', 'success');
-                    }
-                  }}
-                  style={{
-                    padding: '0.75rem 1.5rem', 
-                    background: `linear-gradient(135deg, ${COLORS.accent}, #F43F5E)`,
-                    border: 'none', borderRadius: '0.75rem', color: 'white', fontWeight: 800, cursor: 'pointer'
-                  }}
-                >
-                  Comprar ahora
-                </button>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+                {Object.entries(COURSE_LEVELS).map(([level, course], idx) => (
+                  <motion.div key={level} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="glass hover-lift" style={{ borderRadius: '1.5rem', overflow: 'hidden' }}>
+                    <img src={course.image} alt={course.name} style={{ width: '100%', height: '250px', objectFit: 'cover' }} />
+                    <div style={{ padding: '2rem' }}>
+                      <div style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem' }}>{course.name}</div>
+                      <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)', marginBottom: '1rem' }}>
+                        Level {level} • {course.totalModules} modules
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                        <div style={{ fontSize: '2rem', fontWeight: 900, color: COLORS.accent }}>€{course.price}</div>
+                      </div>
+                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                        onClick={() => handlePurchase(level)}
+                        style={{
+                          width: '100%', padding: '1rem', background: `linear-gradient(135deg, ${COLORS.accent}, #EF4444)`,
+                          border: 'none', borderRadius: '0.75rem', color: 'white',
+                          cursor: 'pointer', fontWeight: 700, fontSize: '1rem',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                        }}>
+                        <ShoppingCart size={20} />
+                        Buy Now
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  </div>
-)}
-        {/* ADMIN DASHBOARD */}
-        {currentUser.role === 'admin' && currentPage === 'admin-dashboard' && (
+          </div>
+        )}
+
+        {currentUser?.role === 'admin' && currentPage === 'admin-dashboard' && (
           <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
             <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
               <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -729,8 +724,7 @@ export default function GHCAcademy() {
           </div>
         )}
 
-        {/* ADMIN STUDENTS */}
-        {currentUser.role === 'admin' && currentPage === 'admin-students' && (
+        {currentUser?.role === 'admin' && currentPage === 'admin-students' && (
           <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
             <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
               <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Student Management</h1>
@@ -791,8 +785,7 @@ export default function GHCAcademy() {
           </div>
         )}
 
-        {/* ADMIN PAYMENTS */}
-        {currentUser.role === 'admin' && currentPage === 'admin-payments' && (
+        {currentUser?.role === 'admin' && currentPage === 'admin-payments' && (
           <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
             <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
               <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Payments & Finance</h1>
@@ -837,22 +830,18 @@ export default function GHCAcademy() {
           </div>
         )}
 
-        {/* ADMIN AUTHORIZATIONS */}
-        {currentUser.role === 'admin' && currentPage === 'admin-authorizations' && (
+        {currentUser?.role === 'admin' && currentPage === 'admin-authorizations' && (
           <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
             <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
               <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Access Authorizations</h1>
               <div className="glass" style={{ padding: '2rem', borderRadius: '1.5rem' }}>
-                <p style={{ color: 'rgba(255,255,255,0.7)' }}>
-                  Module-level access control system
-                </p>
+                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Module-level access control system</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* ADMIN COURSES */}
-        {currentUser.role === 'admin' && currentPage === 'admin-courses' && (
+        {currentUser?.role === 'admin' && currentPage === 'admin-courses' && (
           <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
             <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
               <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Courses & Modules</h1>
@@ -880,8 +869,7 @@ export default function GHCAcademy() {
           </div>
         )}
 
-        {/* ADMIN EXAMS */}
-        {currentUser.role === 'admin' && currentPage === 'admin-exams' && (
+        {currentUser?.role === 'admin' && currentPage === 'admin-exams' && (
           <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
             <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
               <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Exams</h1>
@@ -892,8 +880,7 @@ export default function GHCAcademy() {
           </div>
         )}
 
-        {/* ADMIN AUTOMATIONS */}
-        {currentUser.role === 'admin' && currentPage === 'admin-automations' && (
+        {currentUser?.role === 'admin' && currentPage === 'admin-automations' && (
           <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
             <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
               <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Automations</h1>
@@ -904,14 +891,13 @@ export default function GHCAcademy() {
           </div>
         )}
 
-        {/* ADMIN HISTORY */}
-        {currentUser.role === 'admin' && currentPage === 'admin-history' && (
+        {currentUser?.role === 'admin' && currentPage === 'admin-history' && (
           <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
             <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
               <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>History</h1>
               <div className="glass" style={{ padding: '2rem', borderRadius: '1.5rem' }}>
                 <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem' }}>All Activity Logs ({logs.length})</h3>
-                {logs.map((log, idx) => (
+                {logs.map((log) => (
                   <div key={log.id} style={{
                     padding: '1rem', marginBottom: '0.5rem', background: 'rgba(255,255,255,0.03)',
                     borderRadius: '0.75rem'
@@ -927,8 +913,7 @@ export default function GHCAcademy() {
           </div>
         )}
 
-        {/* STUDENT DASHBOARD */}
-        {currentUser.role === 'student' && studentData && currentPage === 'student-dashboard' && (
+        {currentUser?.role === 'student' && studentData && currentPage === 'student-dashboard' && (
           <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
             <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
               <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -1012,8 +997,7 @@ export default function GHCAcademy() {
           </div>
         )}
 
-        {/* STUDENT COURSES */}
-        {currentUser.role === 'student' && studentData && currentPage === 'student-courses' && (
+        {currentUser?.role === 'student' && studentData && currentPage === 'student-courses' && (
           <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
             <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
               <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>My Courses</h1>
@@ -1050,8 +1034,7 @@ export default function GHCAcademy() {
           </div>
         )}
 
-        {/* STUDENT CONTENT */}
-        {currentUser.role === 'student' && studentData && currentPage === 'student-content' && (
+        {currentUser?.role === 'student' && studentData && currentPage === 'student-content' && (
           <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
             <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
               <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Course Content</h1>
@@ -1106,8 +1089,7 @@ export default function GHCAcademy() {
           </div>
         )}
 
-        {/* STUDENT EXAMS */}
-        {currentUser.role === 'student' && studentData && currentPage === 'student-exams' && (
+        {currentUser?.role === 'student' && studentData && currentPage === 'student-exams' && (
           <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
             <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
               <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>Exam Center</h1>
@@ -1180,8 +1162,7 @@ export default function GHCAcademy() {
           </div>
         )}
 
-        {/* STUDENT CERTIFICATES */}
-        {currentUser.role === 'student' && studentData && currentPage === 'student-certificates' && (
+        {currentUser?.role === 'student' && studentData && currentPage === 'student-certificates' && (
           <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
             <div style={{ maxWidth: '90rem', margin: '0 auto' }}>
               <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '2rem' }}>My Certificates</h1>
