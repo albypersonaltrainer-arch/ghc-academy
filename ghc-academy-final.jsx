@@ -328,6 +328,17 @@ const Login = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState(null);
 
+  // Mostrar botón admin solo si la URL tiene ?admin=1
+  const [showAdminButton, setShowAdminButton] = useState(false);
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('admin') === '1') setShowAdminButton(true);
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
   const handleLogin = (loginType) => {
     setLoading(true);
     setType(loginType);
