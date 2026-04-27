@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'; 
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ChevronRight, BookOpen, Award, Users, Clock, Zap, TrendingUp, Bell, Settings, LogOut, Home, GraduationCap, DollarSign, AlertCircle, CheckCircle, Lock, Unlock, Brain, BarChart3, CreditCard, FileText, Activity, ArrowUpRight, PlayCircle, Trophy, Flame, Check, AlertTriangle, Download, Video, FileQuestion, ShoppingCart, Store } from 'lucide-react';
 
@@ -331,17 +331,9 @@ const Sidebar = ({ isOpen, onClose, currentPage, onNavigate, role }) => {
   );
 };
 
-const Login = ({ onLogin }) => {
+const Login = ({ onLogin, showAdminButton }) => {
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState(null);
-  const [showAdminButton, setShowAdminButton] = useState(false);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('admin') === '1') {
-      setShowAdminButton(true);
-    }
-  }, []);
 
   const handleLogin = (loginType) => {
     setLoading(true);
@@ -492,6 +484,25 @@ export default function GHCAcademy() {
   const [logs, setLogs] = useState([]);
   const [examInProgress, setExamInProgress] = useState(null);
   const [examAnswers, setExamAnswers] = useState([]);
+  const [showAdminButton, setShowAdminButton] = useState(false);
+  const hasInitialized = useRef(false);
+
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
+    const params = new URLSearchParams(window.location.search);
+    const pageParam = params.get('page');
+    const adminParam = params.get('admin');
+
+    if (pageParam) {
+      setCurrentPage(pageParam);
+    }
+    
+    if (adminParam === '1') {
+      setShowAdminButton(true);
+    }
+  }, []);
 
   const showToast = (msg, type = 'success') => setToast({ message: msg, type });
 
@@ -626,7 +637,7 @@ export default function GHCAcademy() {
         currentUser={currentUser} onLogout={handleLogout} onNavigate={handleNavigate} />
 
       <div style={{ paddingTop: '5rem' }}>
-        {currentPage === 'login' && !currentUser && <Login onLogin={handleLogin} />}
+        {currentPage === 'login' && !currentUser && <Login onLogin={handleLogin} showAdminButton={showAdminButton} />}
 
         {currentPage === 'store' && (
           <div style={{ padding: '2rem', color: 'white', minHeight: '100vh' }}>
