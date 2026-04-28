@@ -140,7 +140,11 @@ export default function GHCAcademy() {
       <header className="header">
         <div className="header-content">
           <div className="header-left">
-            <img src="/logo-limpio.png" alt="GHC Academy" className="logo" />
+            <img 
+              src="/logo-limpio.png" 
+              alt="GHC Academy Logo" 
+              className="logo nav-logo" 
+            />
             <div className="brand">
               <h1>GHC ACADEMY</h1>
               <p className="tagline">SPORT THROUGH SCIENCE</p>
@@ -224,7 +228,7 @@ export default function GHCAcademy() {
                   key={course.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="course-card"
+                  className="course-card premium-card"
                 >
                   <img src={course.image} alt={course.name} className="course-image" />
                   <div className="course-content">
@@ -238,7 +242,7 @@ export default function GHCAcademy() {
                       <div className="price">€{course.price}</div>
                       <button 
                         onClick={() => handleBuyNow(course)}
-                        className="buy-button"
+                        className="buy-button btn-cta"
                       >
                         <ShoppingCart size={18} />
                         Buy Now
@@ -374,7 +378,7 @@ export default function GHCAcademy() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="metric-card"
+                    className="metric-card premium-card"
                   >
                     <div className="metric-icon" style={{ color: metric.color }}>
                       <Icon size={32} />
