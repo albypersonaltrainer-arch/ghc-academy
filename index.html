@@ -8,7 +8,33 @@
     <!-- Google Fonts: Playfair Display -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <!-- TEMP FIX: forzar estética premium (quítalo cuando confirmemos la solución definitiva) -->
+    <style>
+      /* Forzar fondo gris metálico + tipografía premium */
+      html, body, #root {
+        background: #f3f4f6 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-family: 'Playfair Display', serif !important;
+        color: #0f172a !important;
+      }
+
+      /* Asegura que la cabecera y botones mantengan estilo neutral */
+      .site-header, header, .navbar, .topbar {
+        background: transparent !important;
+      }
+
+      .btn, button, .btn-primary {
+        font-family: 'Playfair Display', serif !important;
+      }
+
+      /* Pequeño ajuste para evitar que overlays rompan el fondo */
+      body > :not(#root) {
+        background: transparent !important;
+      }
+    </style>
 
     <title>GHC Academy - Premium Sports Training</title>
   </head>
