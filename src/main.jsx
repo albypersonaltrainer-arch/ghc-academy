@@ -1,23 +1,16 @@
+// src/main.jsx
 import React from 'react'
-import { createRoot } from 'react-dom/client'
-import * as ComponentModule from './components/ghc-academy-final.jsx'
+import ReactDOM from 'react-dom/client'
+import GHCAcademy from './components/ghc-academy-final'
+import AdminPanel from './components/AdminPanel'
 import './styles.css'
 
-// Try a set of likely export names; fallback to a dummy component so build doesn't crash
-const Component =
-  ComponentModule.default ||
-  ComponentModule.GHCAcademy ||
-  ComponentModule.GhcAcademy ||
-  ComponentModule.GHC ||
-  ComponentModule.App ||
-  ComponentModule.Header ||
-  (() => () => <div />) // returns a React component that renders nothing
+// Check if admin parameter is present in URL
+const params = new URLSearchParams(window.location.search);
+const isAdmin = params.get('admin') === '1';
 
-// If the fallback above produced a function that returns a component factory, unwrap it:
-const RenderComponent = typeof Component === 'function' && Component.length === 0 ? Component : Component
-
-createRoot(document.getElementById('root')).render(
+ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <RenderComponent />
-  </React.StrictMode>
+    {isAdmin ? <AdminPanel /> : <GHCAcademy />}
+  </React.StrictMode>,
 )
