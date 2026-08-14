@@ -1,0 +1,64 @@
+name: GAVE Wan Online Probe
+
+on:
+  push:
+    branches:
+      - gave/wan22-t2v-test-01
+    paths:
+      - '.github/workflows/gave-wan-online-probe.yml'
+      - 'gave/run_online_probe.py'
+      - 'gave/tests/wan22_ti2v_test_01_first_day.json'
+      - 'gave/requirements.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  shot-001-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GAVE_SPACE: OpenKing/wan2-video-generation
+      GAVE_SHOT_ID: SHOT_001_WAKE
+      GAVE_PROBE_FRAMES: '49'
+      GAVE_PROBE_STEPS: '20'
+      GAVE_OUT: gave/runs/wan22_online_probe
+    steps:
+      - name: Checkout experimental GAVE branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install online client only
+        run: pip install -r gave/requirements.txt
+
+      - name: Generate SHOT 001 via free ZeroGPU T2V
+        run: python gave/run_online_probe.py
+
+      - name: Verify zero-cost safety report
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('gave/runs/wan22_online_probe/result.json')
+          d = json.loads(p.read_text())
+          assert d['status'] == 'GENERATED'
+          assert d['paidInferenceUsed'] is False
+          assert d['actualSpendEur'] == 0
+          assert d['imageGenerationUsed'] is False
+          assert d['imageToVideoUsed'] is False
+          assert Path(d['output']).exists()
+          print('GAVE SAFETY PASS')
+          PY
+
+      - name: Persist generated MP4 on experimental branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add gave/runs/wan22_online_probe/shot_001_wake.mp4 gave/runs/wan22_online_probe/result.json
+          git commit -m 'test(gave): persist SHOT 001 Wan online probe' || exit 0
+          git push origin HEAD:gave/wan22-t2v-test-01
