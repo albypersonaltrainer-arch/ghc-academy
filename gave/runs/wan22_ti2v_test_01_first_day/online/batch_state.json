@@ -22,6 +22,26 @@
       "imageGenerationUsed": false,
       "imageToVideoUsed": false,
       "reviewStatus": "PENDING"
+    },
+    {
+      "shotId": "SHOT_003_CITY",
+      "status": "GENERATED",
+      "version": 1,
+      "durationRequestedSeconds": 4.0,
+      "width": 768,
+      "height": 448,
+      "steps": 4,
+      "guidance": 0.0,
+      "requestedSeed": 24081977,
+      "returnedSeed": 24081977,
+      "elapsedSeconds": 29.2,
+      "output": "gave/runs/wan22_ti2v_test_01_first_day/online/shot_003_city.mp4",
+      "bytes": 569013,
+      "paidInferenceUsed": false,
+      "actualSpendEur": 0,
+      "imageGenerationUsed": false,
+      "imageToVideoUsed": false,
+      "reviewStatus": "PENDING"
     }
   ],
   "paidInferenceUsed": false,
