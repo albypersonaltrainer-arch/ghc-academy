@@ -1,0 +1,20 @@
+{
+  "status": "GENERATED",
+  "space": "Upsampler/wan-2-2-5b-video",
+  "apiName": "/generate_video",
+  "shotId": "SHOT_001_WAKE",
+  "durationRequestedSeconds": 1.0,
+  "steps": 8,
+  "width": 768,
+  "height": 448,
+  "guidance": 0.0,
+  "requestedSeed": 24081977,
+  "returnedSeed": 24081977,
+  "elapsedSeconds": 13.33,
+  "output": "gave/runs/wan22_online_probe/shot_001_wake.mp4",
+  "bytes": 182638,
+  "paidInferenceUsed": false,
+  "actualSpendEur": 0,
+  "imageGenerationUsed": false,
+  "imageToVideoUsed": false
+}
