@@ -28,7 +28,7 @@
       "status": "FAIL",
       "errorType": "AppError",
       "error": "You have exceeded your ZeroGPU runs limit. Subscribe to Hugging Face PRO to get 40 min of ZeroGPU quota a day - https://huggingface.co/subscribe/pro?from=ZeroGPU",
-      "elapsedSeconds": 0.25,
+      "elapsedSeconds": 0.49,
       "paidInferenceUsed": false,
       "actualSpendEur": 0,
       "imageGenerationUsed": false,
