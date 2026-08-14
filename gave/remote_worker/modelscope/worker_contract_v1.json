@@ -1,0 +1,58 @@
+{
+  "schema": "GAVE_REMOTE_GPU_WORKER_V1",
+  "workerId": "MODELSCOPE_A10_01",
+  "provider": "MODELSCOPE_NOTEBOOK",
+  "executionMode": "REMOTE_NOTEBOOK",
+  "hardwareTarget": {
+    "gpu": "NVIDIA_A10",
+    "minVramGb": 20,
+    "expectedVramGb": 24,
+    "persistentStorageGb": 100
+  },
+  "safety": {
+    "paidInferenceAllowed": false,
+    "actualSpendEur": 0,
+    "imageGenerationAllowed": false,
+    "imageToVideoAllowed": false,
+    "productionAllowed": false,
+    "inputMode": "TEXT_ONLY"
+  },
+  "backendOrder": [
+    {
+      "id": "FASTVIDEO_FASTWAN21_1_3B",
+      "role": "PRIMARY_SPEED_TEST",
+      "model": "FastVideo/FastWan2.1-T2V-1.3B-Diffusers",
+      "framework": "FastVideo",
+      "attentionBackend": "TORCH_SDPA",
+      "status": "PREPARED_NOT_REMOTE_TESTED"
+    },
+    {
+      "id": "WAN21_1_3B_MODELSCOPE",
+      "role": "ZERO_COST_BASELINE_FALLBACK",
+      "model": "Wan-AI/Wan2.1-T2V-1.3B",
+      "framework": "WanOfficial",
+      "downloadSource": "ModelScope",
+      "status": "PREPARED_NOT_REMOTE_TESTED"
+    }
+  ],
+  "smokeTest": {
+    "shotId": "REMOTE_A10_GYM_REVEAL_001",
+    "prompt": "Wide cinematic establishing shot from several metres inside a fully enclosed premium professional strength and conditioning gym. Clearly visible solid ceiling, structural columns, artificial ceiling lights, deep indoor floor plan, power racks, barbells, free weights, cable machines and adjustable benches. A few trainers and clients move naturally in the background. Absolutely no open air, no rooftop, no terrace, no courtyard, no patio, no visible sky, no exterior pavement. Realistic documentary cinematography, natural movement, no logos, no text.",
+    "width": 832,
+    "height": 480,
+    "numFrames": 49,
+    "fps": 16,
+    "durationSecondsApprox": 3.06,
+    "steps": 4,
+    "guidance": 1.0,
+    "seed": 24081977
+  },
+  "acceptance": {
+    "mustProduceMp4": true,
+    "mustReportGpu": true,
+    "mustReportElapsedSeconds": true,
+    "mustReportPeakVramGb": true,
+    "mustRemainZeroCost": true,
+    "manualVisualQaRequired": true
+  }
+}
