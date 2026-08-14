@@ -1,0 +1,30 @@
+{
+  "testId": "WAN22_TI2V_TEST_02_FIRST_DAY_DIRECTED",
+  "reviewVersion": 1,
+  "manualReview": [
+    {
+      "shotId": "V2_010_GYM_REVEAL",
+      "generatedVersion": 1,
+      "status": "REJECTED",
+      "reason": "The environment reads as an open-air or outdoor gym instead of an enclosed professional indoor gym.",
+      "failedGate": "REJECT_IF_GYM_NOT_UNMISTAKABLE",
+      "requiredFix": [
+        "unmistakable enclosed indoor architecture",
+        "visible ceiling structure",
+        "visible interior walls or columns",
+        "artificial ceiling lighting",
+        "clear deep interior floor plan",
+        "professional strength racks, cable machines, benches and free weights",
+        "no terrace, courtyard, rooftop or open-air feeling",
+        "no outdoor sky visible",
+        "no exterior pavement or street context inside the gym"
+      ],
+      "reuseAllowed": false
+    }
+  ],
+  "paidInferenceUsed": false,
+  "actualSpendEur": 0,
+  "imageGenerationUsed": false,
+  "imageToVideoUsed": false,
+  "productionTouched": false
+}
