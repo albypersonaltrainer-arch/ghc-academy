@@ -1,0 +1,26 @@
+{
+  "GAVE_VIDEO_BACKEND": "WAN22_TI2V_5B_COMFYUI",
+  "PAID_INFERENCE_ALLOWED": false,
+  "actualSpendEur": 0,
+  "productionAllowed": false,
+  "imageGenerationAllowed": false,
+  "imageToVideoAllowed": false,
+  "comfyui": {
+    "baseUrl": "http://127.0.0.1:8188",
+    "workflowApiPath": "gave/workflows/wan22_ti2v_5b_api.json",
+    "pollIntervalSeconds": 3,
+    "timeoutSeconds": 43200
+  },
+  "wan22": {
+    "diffusionModel": "wan2.2_ti2v_5B_fp16.safetensors",
+    "textEncoder": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+    "vae": "wan2.2_vae.safetensors",
+    "fps": 24,
+    "width": 1280,
+    "height": 704,
+    "steps": 20,
+    "cfg": 5,
+    "sampler": "uni_pc",
+    "scheduler": "simple"
+  }
+}
