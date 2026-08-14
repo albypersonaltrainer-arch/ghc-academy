@@ -1,5 +1,5 @@
 {
-  "runLabel": "FIRST_DAY_DIRECTED_V2_GYM_REVEAL_V2_RETRY",
+  "runLabel": "FIRST_DAY_DIRECTED_V2_GYM_REVEAL_V2_QUOTA_CHECK_20260814_1734",
   "startShot": 10,
   "maxShots": 1,
   "width": 768,
@@ -10,5 +10,5 @@
   "allowPaidFallback": false,
   "allowImageInput": false,
   "touchProduction": false,
-  "notes": "Retry rejected V2_010_GYM_REVEAL as version 2 with QA override enforcing a clearly enclosed indoor professional gym. T2V only, input_image=None, zero cost, no production."
+  "notes": "Quota recheck: retry rejected V2_010_GYM_REVEAL as version 2 with QA override enforcing a clearly enclosed indoor professional gym. T2V only, input_image=None, zero cost, no production."
 }
