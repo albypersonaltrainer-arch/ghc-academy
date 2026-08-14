@@ -1,6 +1,6 @@
 {
-  "runLabel": "FIRST_DAY_DIRECTED_V2_CRITICAL_001_LAUNCH",
-  "startShot": 10,
+  "runLabel": "FIRST_DAY_DIRECTED_V2_CRITICAL_002",
+  "startShot": 12,
   "maxShots": 1,
   "width": 768,
   "height": 448,
@@ -10,5 +10,5 @@
   "allowPaidFallback": false,
   "allowImageInput": false,
   "touchProduction": false,
-  "notes": "Controlled V2 comparison at V1 technical quality. Generate only V2_010_GYM_REVEAL first. T2V only, zero cost."
+  "notes": "Controlled V2 comparison at V1 technical quality. Generate only V2_012_AFTER_CHANGE. Clothing change occurs off-camera across an editorial cut. T2V only, zero cost."
 }
