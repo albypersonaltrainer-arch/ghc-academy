@@ -1,0 +1,71 @@
+name: GAVE ModelScope Worker Contract
+
+on:
+  push:
+    branches:
+      - gave/wan22-t2v-test-01
+    paths:
+      - 'gave/remote_worker/modelscope/**'
+      - '.github/workflows/gave-modelscope-worker-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout experimental branch
+        uses: actions/checkout@v4
+
+      - name: Python syntax
+        run: python -m py_compile gave/remote_worker/modelscope/run_fastvideo_worker.py
+
+      - name: Bash syntax
+        run: bash -n gave/remote_worker/modelscope/bootstrap_a10_fastvideo.sh
+
+      - name: Validate zero-cost T2V contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          c = json.loads(Path('gave/remote_worker/modelscope/worker_contract_v1.json').read_text())
+          s = c['safety']
+          assert c['provider'] == 'MODELSCOPE_NOTEBOOK'
+          assert c['hardwareTarget']['expectedVramGb'] == 24
+          assert c['hardwareTarget']['minVramGb'] >= 20
+          assert s['paidInferenceAllowed'] is False
+          assert s['actualSpendEur'] == 0
+          assert s['imageGenerationAllowed'] is False
+          assert s['imageToVideoAllowed'] is False
+          assert s['productionAllowed'] is False
+          assert s['inputMode'] == 'TEXT_ONLY'
+          assert c['backendOrder'][0]['id'] == 'FASTVIDEO_FASTWAN21_1_3B'
+          assert c['backendOrder'][0]['attentionBackend'] == 'TORCH_SDPA'
+          shot = c['smokeTest']
+          assert shot['width'] == 832 and shot['height'] == 480
+          assert shot['numFrames'] % 4 == 1
+          assert shot['steps'] == 4
+          print('GAVE MODELSCOPE CONTRACT: PASS')
+          PY
+
+      - name: Guard against paid/image paths
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          files = [
+              Path('gave/remote_worker/modelscope/run_fastvideo_worker.py'),
+              Path('gave/remote_worker/modelscope/bootstrap_a10_fastvideo.sh'),
+          ]
+          text = '\n'.join(p.read_text().lower() for p in files)
+          forbidden = [
+              'replicate.com', 'fal.ai', 'runpod', 'openai video',
+              'allowpaidfallback=true', 'image-to-video input',
+          ]
+          hits = [x for x in forbidden if x in text]
+          assert not hits, f'Forbidden paths found: {hits}'
+          assert 'gave_allow_paid=false' in text
+          print('GAVE ZERO-COST STATIC GUARD: PASS')
+          PY
