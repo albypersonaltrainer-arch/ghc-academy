@@ -58,3 +58,5 @@ jobs:
           git commit -m 'test(gave): persist First Day 30s picture lock' || exit 0
           git pull --rebase origin gave/wan22-t2v-test-01
           git push origin HEAD:gave/wan22-t2v-test-01
+
+# Trigger marker: assembly-v1
