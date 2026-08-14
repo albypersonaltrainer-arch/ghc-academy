@@ -21,8 +21,8 @@ jobs:
     env:
       GAVE_SPACE: Upsampler/wan-2-2-5b-video
       GAVE_SHOT_ID: SHOT_001_WAKE
-      GAVE_PROBE_SECONDS: '1.0'
-      GAVE_PROBE_STEPS: '8'
+      GAVE_PROBE_SECONDS: '4.0'
+      GAVE_PROBE_STEPS: '3'
       GAVE_PROBE_WIDTH: '768'
       GAVE_PROBE_HEIGHT: '448'
       GAVE_OUT: gave/runs/wan22_online_probe
@@ -62,5 +62,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add gave/runs/wan22_online_probe/shot_001_wake.mp4 gave/runs/wan22_online_probe/result.json
-          git commit -m 'test(gave): persist SHOT 001 Wan online probe' || exit 0
+          git commit -m 'test(gave): persist full SHOT 001 Wan online probe' || exit 0
           git push origin HEAD:gave/wan22-t2v-test-01
