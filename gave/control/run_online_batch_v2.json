@@ -1,0 +1,14 @@
+{
+  "runLabel": "FIRST_DAY_DIRECTED_V2_CRITICAL_001",
+  "startShot": 10,
+  "maxShots": 1,
+  "width": 768,
+  "height": 448,
+  "steps": 4,
+  "guidance": 0.0,
+  "skipExisting": true,
+  "allowPaidFallback": false,
+  "allowImageInput": false,
+  "touchProduction": false,
+  "notes": "Controlled V2 comparison at V1 technical quality. Generate only V2_010_GYM_REVEAL first. T2V only, zero cost."
+}
