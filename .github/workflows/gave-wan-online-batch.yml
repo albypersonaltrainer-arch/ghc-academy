@@ -1,0 +1,91 @@
+name: GAVE Wan Online Batch
+
+on:
+  push:
+    branches:
+      - gave/wan22-t2v-test-01
+    paths:
+      - 'gave/control/run_online_batch.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gave-wan-online-batch
+  cancel-in-progress: false
+
+jobs:
+  generate-batch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GAVE_SPACE: Upsampler/wan-2-2-5b-video
+      GAVE_MANIFEST: gave/tests/wan22_ti2v_test_01_first_day.json
+      GAVE_CONTROL: gave/control/run_online_batch.json
+      GAVE_OUT: gave/runs/wan22_ti2v_test_01_first_day/online
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    steps:
+      - name: Checkout experimental GAVE branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install online client only
+        run: pip install -r gave/requirements.txt
+
+      - name: Confirm HF token is supplied without exposing it
+        shell: bash
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "HF_TOKEN GitHub Actions secret is not configured."
+            exit 1
+          fi
+          echo "HF_TOKEN present: yes (value hidden)"
+
+      - name: Generate selected shots via Free-account ZeroGPU T2V
+        id: generate
+        run: python -u gave/run_online_batch.py
+
+      - name: Persist any generated MP4s and run state
+        if: always()
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add gave/runs/wan22_ti2v_test_01_first_day/online 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No generated assets/state to persist."
+            exit 0
+          fi
+          git commit -m 'test(gave): persist Wan online batch outputs'
+          git pull --rebase origin gave/wan22-t2v-test-01
+          git push origin HEAD:gave/wan22-t2v-test-01
+
+      - name: Enforce zero-cost invariant
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path('gave/runs/wan22_ti2v_test_01_first_day/online/batch_state.json')
+          if not path.exists():
+              raise SystemExit('No batch_state.json was produced')
+          data = json.loads(path.read_text())
+          assert data['paidInferenceUsed'] is False
+          assert data['actualSpendEur'] == 0
+          assert data['imageGenerationUsed'] is False
+          assert data['imageToVideoUsed'] is False
+          assert data['productionTouched'] is False
+          for result in data.get('results', []):
+              assert result['paidInferenceUsed'] is False
+              assert result['actualSpendEur'] == 0
+              assert result['imageGenerationUsed'] is False
+              assert result['imageToVideoUsed'] is False
+          print('GAVE ZERO-COST/T2V SAFETY: PASS')
+          PY
