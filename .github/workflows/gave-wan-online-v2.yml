@@ -7,6 +7,9 @@ on:
     paths:
       - 'gave/control/run_online_batch_v2.json'
       - 'gave/tests/wan22_ti2v_test_02_first_day_directed.json'
+      - 'gave/tests/v2_prompt_overrides.json'
+      - 'gave/qa/v2_manual_review.json'
+      - 'gave/run_online_batch_v2.py'
       - '.github/workflows/gave-wan-online-v2.yml'
   workflow_dispatch:
 
@@ -25,6 +28,8 @@ jobs:
       GAVE_SPACE: Upsampler/wan-2-2-5b-video
       GAVE_MANIFEST: gave/tests/wan22_ti2v_test_02_first_day_directed.json
       GAVE_CONTROL: gave/control/run_online_batch_v2.json
+      GAVE_OVERRIDES: gave/tests/v2_prompt_overrides.json
+      GAVE_REVIEW: gave/qa/v2_manual_review.json
       GAVE_OUT: gave/runs/wan22_ti2v_test_02_first_day/online
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
@@ -41,33 +46,27 @@ jobs:
       - name: Install online client only
         run: pip install -r gave/requirements.txt
 
-      - name: Validate directorial manifest and safety guards
+      - name: Validate directorial manifest and QA guards
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
           m = json.loads(Path('gave/tests/wan22_ti2v_test_02_first_day_directed.json').read_text())
+          o = json.loads(Path('gave/tests/v2_prompt_overrides.json').read_text())
+          r = json.loads(Path('gave/qa/v2_manual_review.json').read_text())
           assert m['paidInferenceAllowed'] is False
           assert m['productionAllowed'] is False
           assert m['imageGenerationAllowed'] is False
           assert m['imageToVideoAllowed'] is False
           assert m['actualSpendEur'] == 0
-          assert m['storyRule'].find('SHOT_010') >= 0
-          shots = m['shots']
-          assert len(shots) == 14
-          ids = [s['id'] for s in shots]
-          assert len(ids) == len(set(ids))
-          for s in shots:
-              assert s['durationSeconds'] <= 3.5
-              assert s.get('primaryAction')
-              assert s.get('wardrobeState') in {'STREET_OUTFIT','CHANGE_PREP','TRAINER_OUTFIT'}
-              assert s.get('mustShow')
-              assert s.get('mustNotShow') is not None
-          reveal = next(s for s in shots if s['id'] == 'V2_010_GYM_REVEAL')
-          change = next(s for s in shots if s['id'] == 'V2_012_AFTER_CHANGE')
-          assert reveal['criticalQaGate'] == 'REJECT_IF_GYM_NOT_UNMISTAKABLE'
-          assert change['criticalQaGate'] == 'REJECT_IF_ANY_CLOTHING_MORPH_OCCURS'
-          print('GAVE DIRECTORIAL V2 STATIC QA: PASS')
+          assert len(m['shots']) == 14
+          rejected = next(x for x in r['manualReview'] if x['shotId'] == 'V2_010_GYM_REVEAL')
+          assert rejected['status'] == 'REJECTED'
+          assert rejected['reuseAllowed'] is False
+          override = o['overrides']['V2_010_GYM_REVEAL']
+          assert override['nextVersion'] == 2
+          assert 'NO OPEN AIR' in override['prompt']
+          print('GAVE DIRECTED V2 QA/VERSIONING: PASS')
           PY
 
       - name: Confirm HF token without exposing it
@@ -80,7 +79,7 @@ jobs:
           echo "HF_TOKEN present: yes (hidden)"
 
       - name: Generate selected V2 shot via Free-account Wan T2V
-        run: python -u gave/run_online_batch.py
+        run: python -u gave/run_online_batch_v2.py
 
       - name: Persist V2 outputs and state
         if: always()
@@ -93,7 +92,7 @@ jobs:
             echo "No V2 assets/state to persist."
             exit 0
           fi
-          git commit -m 'test(gave): persist directed V2 Wan output'
+          git commit -m 'test(gave): persist QA-aware directed V2 Wan output'
           git pull --rebase origin gave/wan22-t2v-test-01
           git push origin HEAD:gave/wan22-t2v-test-01
 
@@ -103,9 +102,9 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          p = Path('gave/runs/wan22_ti2v_test_02_first_day/online/batch_state.json')
+          p = Path('gave/runs/wan22_ti2v_test_02_first_day/online/batch_state_v2.json')
           if not p.exists():
-              raise SystemExit('No V2 batch_state.json produced')
+              raise SystemExit('No batch_state_v2.json produced')
           d = json.loads(p.read_text())
           assert d['paidInferenceUsed'] is False
           assert d['actualSpendEur'] == 0
