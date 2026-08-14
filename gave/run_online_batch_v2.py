@@ -65,7 +65,7 @@ def review_index(review: dict[str, Any]) -> dict[tuple[str, int], dict[str, Any]
 def main() -> int:
     manifest = load_json(MANIFEST_PATH)
     control = load_json(CONTROL_PATH)
-    overrides = load_json(OVERRIDES_PATH, {'overrides': {}})
+    overrides = load_json(OVERRIDES_PATH, {'overrides': {}, 'timingOverrides': {}})
     review = load_json(REVIEW_PATH, {'manualReview': []})
     assert_safety(manifest, control)
 
@@ -86,6 +86,9 @@ def main() -> int:
     seed = int(manifest.get('continuitySeed', 24081977))
     reviews = review_index(review)
     override_map = overrides.get('overrides', {})
+    timing_map = overrides.get('timingOverrides', {})
+    if timing_map and abs(sum(float(v) for v in timing_map.values()) - float(manifest.get('targetDurationSeconds', 30))) > 0.001:
+        raise GaveSafetyError('Timing overrides do not match target duration')
 
     state_path = OUT / 'batch_state_v2.json'
     state = load_json(state_path, {
@@ -119,7 +122,7 @@ def main() -> int:
             continue
 
         full_prompt = f'{master} {prompt_body}'.strip()
-        duration = float(shot['durationSeconds'])
+        duration = float(timing_map.get(shot_id, shot['durationSeconds']))
         started = time.time()
         print(json.dumps({'status': 'QUEUEING', 'shotId': shot_id, 'version': version, 'image': None, 'duration': duration, 'overrideUsed': bool(ov)}, ensure_ascii=False), flush=True)
         try:
