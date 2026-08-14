@@ -1,0 +1,14 @@
+{
+  "runLabel": "FIRST_DAY_BATCH_001",
+  "startShot": 1,
+  "maxShots": 1,
+  "width": 768,
+  "height": 448,
+  "steps": 4,
+  "guidance": 0.0,
+  "skipExisting": true,
+  "allowPaidFallback": false,
+  "allowImageInput": false,
+  "touchProduction": false,
+  "notes": "Update this file to trigger an authenticated Free-account batch after HF_TOKEN is configured in GitHub Actions secrets."
+}
