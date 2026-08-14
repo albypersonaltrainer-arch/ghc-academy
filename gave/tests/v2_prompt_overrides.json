@@ -1,0 +1,42 @@
+{
+  "schema": "GAVE_PROMPT_OVERRIDES_V1",
+  "testId": "WAN22_TI2V_TEST_02_FIRST_DAY_DIRECTED",
+  "overrides": {
+    "V2_010_GYM_REVEAL": {
+      "nextVersion": 2,
+      "criticalQaGate": "REJECT_IF_NOT_CLEARLY_ENCLOSED_INDOOR_PRO_GYM",
+      "mustShow": [
+        "enclosed indoor professional gym",
+        "visible ceiling structure",
+        "visible interior walls or structural columns",
+        "artificial ceiling lighting fixtures",
+        "deep interior floor plan",
+        "power racks",
+        "barbells and free weights",
+        "cable machines",
+        "benches",
+        "functional training area"
+      ],
+      "mustNotShow": [
+        "open-air gym",
+        "outdoor gym",
+        "rooftop gym",
+        "terrace",
+        "courtyard",
+        "patio",
+        "visible sky",
+        "street pavement inside gym",
+        "garden training area",
+        "bodybuilding dungeon",
+        "empty generic room",
+        "clothing change"
+      ],
+      "prompt": "FIRST EXPLICIT REVEAL. UNMISTAKABLY INSIDE A FULLY ENCLOSED PROFESSIONAL STRENGTH AND CONDITIONING GYM. Wide interior establishing shot from several metres inside the building. The frame must clearly show an indoor ceiling with beams or acoustic panels, suspended or recessed artificial ceiling lights, solid interior walls or structural columns, and a deep enclosed floor plan extending behind the protagonist. Clearly visible power racks, barbells and plate-loaded free-weight stations, cable machines, adjustable benches and a functional training zone. A few real trainers and clients work naturally in the background. The same protagonist in exact STREET_OUTFIT is small near the entrance, pausing to absorb the room. NO OPEN AIR, NO ROOFTOP, NO TERRACE, NO COURTYARD, NO PATIO, NO SKY, NO EXTERIOR PAVEMENT, NO STREET-LIKE SPACE. The location must read as a premium enclosed indoor commercial gym within the first second. No wardrobe change, no logos, no fitness-advertising pose."
+    }
+  },
+  "paidInferenceUsed": false,
+  "actualSpendEur": 0,
+  "imageGenerationUsed": false,
+  "imageToVideoUsed": false,
+  "productionTouched": false
+}
