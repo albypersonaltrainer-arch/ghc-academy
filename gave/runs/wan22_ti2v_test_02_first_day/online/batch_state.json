@@ -22,6 +22,18 @@
       "imageGenerationUsed": false,
       "imageToVideoUsed": false,
       "reviewStatus": "PENDING"
+    },
+    {
+      "shotId": "V2_012_AFTER_CHANGE",
+      "status": "FAIL",
+      "errorType": "AppError",
+      "error": "You have exceeded your ZeroGPU runs limit. Subscribe to Hugging Face PRO to get 40 min of ZeroGPU quota a day - https://huggingface.co/subscribe/pro?from=ZeroGPU",
+      "elapsedSeconds": 0.25,
+      "paidInferenceUsed": false,
+      "actualSpendEur": 0,
+      "imageGenerationUsed": false,
+      "imageToVideoUsed": false,
+      "reviewStatus": "NOT_TESTED"
     }
   ],
   "paidInferenceUsed": false,
