@@ -1,0 +1,165 @@
+{
+  "testId": "WAN22_TI2V_TEST_02_FIRST_DAY_DIRECTED",
+  "title": "Primer día — Directed V2",
+  "targetDurationSeconds": 30,
+  "backend": "WAN22_TI2V_5B_T2V",
+  "paidInferenceAllowed": false,
+  "actualSpendEur": 0,
+  "productionAllowed": false,
+  "imageGenerationAllowed": false,
+  "imageToVideoAllowed": false,
+  "continuitySeed": 24081977,
+  "directionVersion": "ATOMIC_SHOTS_V2",
+  "characterLock": "Exactly the same protagonist in every shot: Spanish-looking male, 25 years old, athletic natural build, short dark-brown hair, subtle beard, expressive brown eyes, relatable face, same facial proportions, same age and same body proportions. Pre-change wardrobe is always charcoal casual jacket over dark gray T-shirt, black trousers, dark sneakers, simple black backpack. Post-change trainer wardrobe is always plain fitted black training shirt, plain black athletic trousers and dark training shoes. Never change face, hair, age, body or clothing within a single shot.",
+  "visualMaster": "Premium cinematic documentary realism in a contemporary dense American city inspired by New York without iconic landmarks. Brick and stone facades, steel fire escapes, subway, crosswalks and realistic morning commuters. Cool early-morning palette, natural skin, restrained filmic contrast, realistic movement, subtle handheld or stabilized tracking, 35mm and 50mm lens language, motivated cuts, no advertising aesthetic.",
+  "storyRule": "The destination must remain completely unknown through SHOT_009. SHOT_010 is the first and unmistakable reveal of a real professional strength and conditioning gym. Clothing change is never shown as a transformation: it happens only across an editorial cut between SHOT_011 and SHOT_012.",
+  "negativeMaster": "low quality, worst quality, overexposed, oversaturated, deformed anatomy, distorted face, malformed hands, extra fingers, extra limbs, duplicate protagonist, inconsistent age, inconsistent hairstyle, spontaneous clothing change, clothing morph, magical transformation, superhero transformation, garment appearing on body, body morph, bodybuilder physique, fitness-model posing, gym clue before reveal, sports equipment before reveal, readable brand names, logos, subtitles, captions, watermark, surreal elements, videogame look, artificial camera movement",
+  "voiceover": {
+    "masterText": "Vale... hoy es el día. Llevo tanto tiempo imaginándomelo que ahora que está aquí no sé si estoy más nervioso o más ilusionado. Has estudiado. Has practicado. Estás preparado. Solo tienes que cruzar esa puerta. Porque hoy... ya no vengo a entrenar. Hoy empieza mi primer día como entrenador.",
+    "status": "SCRIPT_READY_AUDIO_NOT_GENERATED"
+  },
+  "shots": [
+    {
+      "id": "V2_001_WAKE",
+      "durationSeconds": 2.5,
+      "wardrobeState": "STREET_OUTFIT",
+      "primaryAction": "wake_and_sit_up",
+      "transitionIn": "FADE_FROM_BLACK",
+      "mustShow": ["same protagonist", "bedroom", "eyes open with anticipation", "sits upright"],
+      "mustNotShow": ["gym", "sports equipment", "wardrobe change"],
+      "prompt": "Same protagonist, STREET_OUTFIT continuity not yet visible except dark gray T-shirt. Early-morning apartment bedroom. One action only: alarm moment, his eyes open immediately with nervous anticipation, one controlled breath, then he sits upright. No getting dressed, no backpack, no leaving the room. Close 50mm cinematic shot, cool window light, subtle push-in."
+    },
+    {
+      "id": "V2_002_JACKET",
+      "durationSeconds": 2.0,
+      "wardrobeState": "STREET_OUTFIT",
+      "primaryAction": "put_on_jacket",
+      "transitionIn": "CUT_ON_BODY_MOVEMENT",
+      "mustShow": ["charcoal jacket", "dark gray T-shirt", "same protagonist"],
+      "mustNotShow": ["backpack exit", "gym", "trainer clothes"],
+      "prompt": "Same protagonist in the same apartment. One action only: he puts on the same charcoal casual jacket over the same dark gray T-shirt and settles the collar. Medium shot, believable fabric movement. Do not show him leaving or touching the backpack. Clothing must remain stable after the jacket is on."
+    },
+    {
+      "id": "V2_003_BACKPACK_EXIT",
+      "durationSeconds": 2.5,
+      "wardrobeState": "STREET_OUTFIT",
+      "primaryAction": "grab_backpack_and_exit",
+      "transitionIn": "HARD_CUT",
+      "mustShow": ["black backpack", "apartment door", "same street outfit"],
+      "mustNotShow": ["trainer clothes", "gym clue", "clothing morph"],
+      "prompt": "Same protagonist, exact STREET_OUTFIT. One continuous simple action: he lifts the same simple black backpack by one strap, puts it on his shoulder and exits through the apartment door. Camera stays behind and slightly to the side. No other action, no clothing change, no reveal of backpack contents."
+    },
+    {
+      "id": "V2_004_STREET_WALK",
+      "durationSeconds": 2.5,
+      "wardrobeState": "STREET_OUTFIT",
+      "primaryAction": "fast_purposeful_walk",
+      "transitionIn": "MATCH_DIRECTION_EXIT_TO_STREET",
+      "mustShow": ["urban street", "purposeful walk", "same black backpack"],
+      "mustNotShow": ["gym sign", "sports imagery", "wardrobe change"],
+      "prompt": "Same protagonist, exact STREET_OUTFIT and same black backpack. Dense New-York-inspired morning street. One action only: purposeful fast walk along the sidewalk. Side tracking camera, realistic pedestrians and traffic, natural backpack movement. Destination unknown."
+    },
+    {
+      "id": "V2_005_CROSSWALK",
+      "durationSeconds": 2.5,
+      "wardrobeState": "STREET_OUTFIT",
+      "primaryAction": "cross_street",
+      "transitionIn": "MOTION_MATCH",
+      "mustShow": ["crosswalk", "same protagonist", "brief nervous smile"],
+      "mustNotShow": ["gym clue", "trainer clothing", "clothing morph"],
+      "prompt": "Same protagonist, exact STREET_OUTFIT. One action only: he crosses a busy pedestrian crossing at a brisk walk, briefly glancing ahead with a restrained involuntary smile. Dynamic three-quarter tracking shot. No jogging transformation, no change of clothes, no fitness imagery."
+    },
+    {
+      "id": "V2_006_SUBWAY",
+      "durationSeconds": 3.5,
+      "wardrobeState": "STREET_OUTFIT",
+      "primaryAction": "quiet_subway_reflection",
+      "transitionIn": "MOTION_CUT_TO_TRAIN",
+      "mustShow": ["subway interior", "window reflection", "nervous micro-expression"],
+      "mustNotShow": ["destination text", "gym clue", "wardrobe change"],
+      "prompt": "Same protagonist, exact STREET_OUTFIT and black backpack. Realistic underground subway carriage. One emotional beat only: seated by the window, he looks at his reflection, takes a controlled breath and suppresses a small excited smile. Natural train vibration. Medium close-up moving subtly closer. No standing, no exiting, no clothing change."
+    },
+    {
+      "id": "V2_007_APPROACH",
+      "durationSeconds": 2.5,
+      "wardrobeState": "STREET_OUTFIT",
+      "primaryAction": "approach_unknown_business",
+      "transitionIn": "HARD_CUT_ON_GAZE",
+      "mustShow": ["urban storefronts", "determined walk", "same outfit"],
+      "mustNotShow": ["gym sign", "weights", "fitness poster", "trainer clothes"],
+      "prompt": "Same protagonist, exact STREET_OUTFIT. New-York-inspired block with several neutral ground-floor businesses. One action only: he walks toward an unidentified destination with growing determination. Front tracking shot gradually shifts to rear three-quarter. No readable business type, no gym clues."
+    },
+    {
+      "id": "V2_008_DOOR_HESITATE",
+      "durationSeconds": 2.5,
+      "wardrobeState": "STREET_OUTFIT",
+      "primaryAction": "pause_before_unknown_door",
+      "transitionIn": "CUT_ON_APPROACH",
+      "mustShow": ["unidentified door", "rear view", "hesitation", "deep breath"],
+      "mustNotShow": ["gym interior", "gym logo", "sports imagery", "wardrobe change"],
+      "prompt": "Same protagonist, exact STREET_OUTFIT and backpack. Exterior of an unidentified business entrance. Camera directly behind him. One action only: he stops one step from the door, pauses, shoulders rise with one deep breath and he straightens his posture. Do not open the door yet. Interior must remain hidden and unreadable."
+    },
+    {
+      "id": "V2_009_THRESHOLD",
+      "durationSeconds": 2.0,
+      "wardrobeState": "STREET_OUTFIT",
+      "primaryAction": "open_door_and_cross_threshold",
+      "transitionIn": "CUT_ON_BREATH_RELEASE",
+      "mustShow": ["hand opens door", "rear view", "dark indistinct interior"],
+      "mustNotShow": ["visible gym equipment", "trainer clothes", "clothing morph"],
+      "prompt": "Same protagonist, exact STREET_OUTFIT. One action only: from behind, he opens the unidentified door and takes one step across the threshold. The interior beyond is intentionally dark, shallow-focus and indistinct so the audience still cannot identify the business. Cut before any equipment becomes visible."
+    },
+    {
+      "id": "V2_010_GYM_REVEAL",
+      "durationSeconds": 3.0,
+      "wardrobeState": "STREET_OUTFIT",
+      "primaryAction": "explicit_gym_reveal",
+      "transitionIn": "REVEAL_CUT_FROM_DARK_THRESHOLD_TO_WIDE_INTERIOR",
+      "mustShow": ["professional gym", "strength racks", "free weights", "cable machines", "benches", "functional training space"],
+      "mustNotShow": ["bodybuilding dungeon", "empty generic room", "clothing change"],
+      "criticalQaGate": "REJECT_IF_GYM_NOT_UNMISTAKABLE",
+      "prompt": "FIRST EXPLICIT REVEAL. Interior wide establishing shot of a premium professional strength and conditioning gym. The gym itself is the subject of the shot: clearly visible power racks, barbells and free weights, cable machines, benches and functional training area, with a few real trainers and clients in the background. The same protagonist in exact STREET_OUTFIT is small in the foreground just inside the entrance, pausing to take it in. No wardrobe change. The environment must unmistakably read as a real professional gym within the first second."
+    },
+    {
+      "id": "V2_011_CHANGE_PREP",
+      "durationSeconds": 2.5,
+      "wardrobeState": "CHANGE_PREP",
+      "primaryAction": "remove_trainer_shirt_from_backpack",
+      "transitionIn": "HARD_CUT_TO_STAFF_CHANGING_AREA",
+      "mustShow": ["staff changing area", "street outfit unchanged", "black trainer shirt in hands"],
+      "mustNotShow": ["shirt morphing onto body", "instant clothing change"],
+      "prompt": "Same protagonist in a clean staff changing area, still wearing the exact STREET_OUTFIT. One action only: he opens the same black backpack and removes a folded plain black training shirt, holding it in his hands. His charcoal jacket and dark gray T-shirt remain fully on his body throughout the shot. No transformation, no garment appears on him."
+    },
+    {
+      "id": "V2_012_AFTER_CHANGE",
+      "durationSeconds": 2.0,
+      "wardrobeState": "TRAINER_OUTFIT",
+      "primaryAction": "place_street_jacket_on_bench",
+      "transitionIn": "ELLIPTICAL_HARD_CUT_CHANGE_HAPPENS_OFF_CAMERA",
+      "mustShow": ["same protagonist", "plain black trainer shirt already worn", "charcoal jacket placed on bench"],
+      "mustNotShow": ["on-screen clothing transformation", "shirt materializing", "street jacket still worn"],
+      "criticalQaGate": "REJECT_IF_ANY_CLOTHING_MORPH_OCCURS",
+      "prompt": "Editorial ellipsis: the clothing change happened OFF CAMERA between shots. Begin with the same protagonist already fully dressed in the stable TRAINER_OUTFIT: plain fitted black training shirt and black athletic trousers. One action only: he places the removed charcoal street jacket neatly on a bench beside the backpack. His trainer outfit is already complete at frame one and must not change during this shot."
+    },
+    {
+      "id": "V2_013_FLOOR_ENTRY",
+      "durationSeconds": 2.5,
+      "wardrobeState": "TRAINER_OUTFIT",
+      "primaryAction": "enter_training_floor_as_staff",
+      "transitionIn": "MATCH_CUT_ON_TURN",
+      "mustShow": ["same gym", "trainer outfit", "colleague acknowledgement"],
+      "mustNotShow": ["personal workout", "wardrobe morph", "hero pose"],
+      "prompt": "Same protagonist, stable TRAINER_OUTFIT from the first frame. Same professional gym. One action only: he walks from the staff area onto the training floor while a distant colleague gives him a small natural acknowledging nod. Camera follows behind and slightly to the side. He does not exercise and does not pose."
+    },
+    {
+      "id": "V2_014_FINAL",
+      "durationSeconds": 2.5,
+      "wardrobeState": "TRAINER_OUTFIT",
+      "primaryAction": "quiet_proud_arrival",
+      "transitionIn": "CUT_ON_COLLEAGUE_NOD",
+      "mustShow": ["same protagonist", "professional gym background", "quiet proud smile"],
+      "mustNotShow": ["exercise", "hero pose", "wardrobe change"],
+      "prompt": "Same protagonist, stable TRAINER_OUTFIT. Medium close-up at the edge of the professional gym floor. One emotional beat only: he takes a calm breath, looks across the room and a quiet proud smile appears as he begins one small step forward into his first working day. Natural understated performance, no exercise, no heroic posing."
+    }
+  ]
+}
