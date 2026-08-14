@@ -20,8 +20,10 @@ jobs:
       - name: Checkout experimental GAVE branch
         uses: actions/checkout@v4
 
-      - name: Verify FFmpeg is available
+      - name: Install FFmpeg
         run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
           ffmpeg -version
           ffprobe -version
 
@@ -58,5 +60,3 @@ jobs:
           git commit -m 'test(gave): persist First Day 30s picture lock' || exit 0
           git pull --rebase origin gave/wan22-t2v-test-01
           git push origin HEAD:gave/wan22-t2v-test-01
-
-# Trigger marker: assembly-v1
