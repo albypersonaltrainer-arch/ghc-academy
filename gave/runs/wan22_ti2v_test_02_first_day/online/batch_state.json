@@ -1,0 +1,32 @@
+{
+  "testId": "WAN22_TI2V_TEST_02_FIRST_DAY_DIRECTED",
+  "space": "Upsampler/wan-2-2-5b-video",
+  "backend": "HF_ZERO_GPU_FASTWAN22_TI2V_5B",
+  "results": [
+    {
+      "shotId": "V2_010_GYM_REVEAL",
+      "status": "GENERATED",
+      "version": 1,
+      "durationRequestedSeconds": 3.0,
+      "width": 768,
+      "height": 448,
+      "steps": 4,
+      "guidance": 0.0,
+      "requestedSeed": 24081977,
+      "returnedSeed": 24081977,
+      "elapsedSeconds": 24.29,
+      "output": "gave/runs/wan22_ti2v_test_02_first_day/online/v2_010_gym_reveal.mp4",
+      "bytes": 340824,
+      "paidInferenceUsed": false,
+      "actualSpendEur": 0,
+      "imageGenerationUsed": false,
+      "imageToVideoUsed": false,
+      "reviewStatus": "PENDING"
+    }
+  ],
+  "paidInferenceUsed": false,
+  "actualSpendEur": 0,
+  "imageGenerationUsed": false,
+  "imageToVideoUsed": false,
+  "productionTouched": false
+}
