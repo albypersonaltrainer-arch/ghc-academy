@@ -27,9 +27,12 @@ master = " ".join(
     if x.strip()
 )
 prompt = f"{master} {shot['prompt']}".strip()
+negative_prompt = str(manifest.get("negativeMaster", ""))
+
 
 def log(*args):
     print(*args, flush=True)
+
 
 log(json.dumps({
     "status": "STARTING",
@@ -52,26 +55,22 @@ log("API_DISCOVERED", round(time.time() - started, 2))
 named = api.get("named_endpoints") or {}
 log("NAMED_ENDPOINTS", list(named))
 
-api_name = None
-for candidate in ("/generate_video", "/predict"):
-    if candidate in named:
-        api_name = candidate
-        break
-if api_name is None:
+api_name = "/generate_video" if "/generate_video" in named else None
+if not api_name:
     for name in named:
         if "video" in name.lower() or "generate" in name.lower():
             api_name = name
             break
-if api_name is None and len(named) == 1:
-    api_name = next(iter(named))
 if not api_name:
     raise RuntimeError(f"No usable generation endpoint found: {list(named)}")
 
 seed = int(manifest.get("continuitySeed", 24081977))
-steps = int(os.environ.get("GAVE_PROBE_STEPS", "8"))
-probe_seconds = float(os.environ.get("GAVE_PROBE_SECONDS", "1.0"))
+steps = int(os.environ.get("GAVE_PROBE_STEPS", "4"))
+probe_seconds = float(os.environ.get("GAVE_PROBE_SECONDS", "2.0"))
 width = int(os.environ.get("GAVE_PROBE_WIDTH", "768"))
 height = int(os.environ.get("GAVE_PROBE_HEIGHT", "448"))
+guidance = float(os.environ.get("GAVE_PROBE_GUIDANCE", "0.0"))
+
 log("QUEUEING", json.dumps({
     "space": SPACE,
     "apiName": api_name,
@@ -79,28 +78,31 @@ log("QUEUEING", json.dumps({
     "steps": steps,
     "width": width,
     "height": height,
+    "guidance": guidance,
+    "seed": seed,
+    "randomizeSeed": False,
     "image": None,
 }, ensure_ascii=False))
 
 if SPACE == "Upsampler/wan-2-2-5b-video":
-    # API follows the official Wan TI2V Gradio shape:
-    # image, prompt, height, width, duration_seconds, sampling_steps,
-    # guide_scale, shift, seed. Image is deliberately None => T2V only.
+    # Exact API discovered live from the running Space:
+    # input_image, prompt, height, width, negative_prompt, duration_seconds,
+    # guidance_scale, steps, seed, randomize_seed.
+    # input_image=None is deliberate: PURE TEXT-TO-VIDEO.
     result = client.predict(
         None,
         prompt,
         height,
         width,
+        negative_prompt,
         probe_seconds,
+        guidance,
         steps,
-        5.0,
-        5.0,
         seed,
+        False,
         api_name=api_name,
     )
 else:
-    # OpenKing profile: prompt, image, width, height, frames, steps,
-    # guidance_scale, seed. Kept only as a compatibility fallback.
     frames = max(25, int(round(probe_seconds * 24)))
     result = client.predict(
         prompt,
@@ -115,12 +117,21 @@ else:
     )
 
 log("RAW_RESULT", repr(result))
-video = result[0] if isinstance(result, (tuple, list)) else result
-status_text = result[1] if isinstance(result, (tuple, list)) and len(result) > 1 else ""
-if video is None:
-    raise RuntimeError(f"Space returned no video. Status: {status_text}")
+video_payload = result[0] if isinstance(result, (tuple, list)) else result
+remote_seed = result[1] if isinstance(result, (tuple, list)) and len(result) > 1 else seed
 
-path = Path(str(video))
+if video_payload is None:
+    raise RuntimeError("Space returned no video")
+
+# Gradio 6 Video output arrives as {"video": <local downloaded path>, "subtitles": None}.
+if isinstance(video_payload, dict):
+    video_path_value = video_payload.get("video") or video_payload.get("path")
+else:
+    video_path_value = video_payload
+if not video_path_value:
+    raise RuntimeError(f"Video payload has no path: {video_payload!r}")
+
+path = Path(str(video_path_value))
 if not path.exists():
     raise RuntimeError(f"Downloaded video path does not exist: {path}")
 
@@ -137,10 +148,12 @@ report = {
     "steps": steps,
     "width": width,
     "height": height,
+    "guidance": guidance,
+    "requestedSeed": seed,
+    "returnedSeed": remote_seed,
     "elapsedSeconds": round(time.time() - started, 2),
     "output": str(final),
     "bytes": final.stat().st_size,
-    "remoteStatus": str(status_text),
     "paidInferenceUsed": False,
     "actualSpendEur": 0,
     "imageGenerationUsed": False,
