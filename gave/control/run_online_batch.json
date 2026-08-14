@@ -1,7 +1,7 @@
 {
-  "runLabel": "FIRST_DAY_BATCH_005",
-  "startShot": 5,
-  "maxShots": 1,
+  "runLabel": "FIRST_DAY_BATCH_006_008",
+  "startShot": 6,
+  "maxShots": 3,
   "width": 768,
   "height": 448,
   "steps": 4,
@@ -10,5 +10,5 @@
   "allowPaidFallback": false,
   "allowImageInput": false,
   "touchProduction": false,
-  "notes": "Authenticated Free-account ZeroGPU batch. Generate SHOT 005 only; stop on failure or quota exhaustion."
+  "notes": "Authenticated Free-account ZeroGPU batch. Generate SHOTS 006-008 sequentially; stop immediately on failure or quota exhaustion and persist completed shots."
 }
