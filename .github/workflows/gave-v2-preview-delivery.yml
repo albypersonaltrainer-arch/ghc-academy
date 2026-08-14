@@ -1,0 +1,34 @@
+name: GAVE V2 Preview Delivery
+
+on:
+  push:
+    branches:
+      - gave/wan22-t2v-test-01
+    paths:
+      - '.github/workflows/gave-v2-preview-delivery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deliver-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout experimental GAVE branch
+        uses: actions/checkout@v4
+
+      - name: Verify directed V2 reveal exists
+        shell: bash
+        run: |
+          test -s gave/runs/wan22_ti2v_test_02_first_day/online/v2_010_gym_reveal.mp4
+          ls -lh gave/runs/wan22_ti2v_test_02_first_day/online/v2_010_gym_reveal.mp4
+
+      - name: Upload V2 reveal preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: gave-first-day-v2-gym-reveal-preview
+          path: gave/runs/wan22_ti2v_test_02_first_day/online/v2_010_gym_reveal.mp4
+          if-no-files-found: error
+          retention-days: 7
