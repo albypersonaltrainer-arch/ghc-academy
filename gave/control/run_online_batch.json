@@ -1,6 +1,6 @@
 {
-  "runLabel": "FIRST_DAY_BATCH_001",
-  "startShot": 1,
+  "runLabel": "FIRST_DAY_BATCH_002",
+  "startShot": 2,
   "maxShots": 1,
   "width": 768,
   "height": 448,
@@ -10,5 +10,5 @@
   "allowPaidFallback": false,
   "allowImageInput": false,
   "touchProduction": false,
-  "notes": "Update this file to trigger an authenticated Free-account batch after HF_TOKEN is configured in GitHub Actions secrets."
+  "notes": "Authenticated Free-account ZeroGPU batch. Generate SHOT 002 only; stop on failure or quota exhaustion."
 }
