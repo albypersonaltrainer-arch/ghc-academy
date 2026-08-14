@@ -1,6 +1,22 @@
 {
   "schema": "GAVE_PROMPT_OVERRIDES_V1",
   "testId": "WAN22_TI2V_TEST_02_FIRST_DAY_DIRECTED",
+  "timingOverrides": {
+    "V2_001_WAKE": 2.4,
+    "V2_002_JACKET": 1.8,
+    "V2_003_BACKPACK_EXIT": 2.0,
+    "V2_004_STREET_WALK": 2.0,
+    "V2_005_CROSSWALK": 2.0,
+    "V2_006_SUBWAY": 3.2,
+    "V2_007_APPROACH": 2.2,
+    "V2_008_DOOR_HESITATE": 2.0,
+    "V2_009_THRESHOLD": 1.8,
+    "V2_010_GYM_REVEAL": 2.7,
+    "V2_011_CHANGE_PREP": 2.0,
+    "V2_012_AFTER_CHANGE": 1.7,
+    "V2_013_FLOOR_ENTRY": 2.1,
+    "V2_014_FINAL": 2.1
+  },
   "overrides": {
     "V2_010_GYM_REVEAL": {
       "nextVersion": 2,
