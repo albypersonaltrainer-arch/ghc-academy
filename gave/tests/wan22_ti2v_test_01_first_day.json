@@ -1,0 +1,86 @@
+{
+  "testId": "WAN22_TI2V_TEST_01_FIRST_DAY",
+  "title": "Primer día",
+  "targetDurationSeconds": 30,
+  "backend": "WAN22_TI2V_5B_COMFYUI",
+  "paidInferenceAllowed": false,
+  "actualSpendEur": 0,
+  "productionAllowed": false,
+  "imageGenerationAllowed": false,
+  "imageToVideoAllowed": false,
+  "fps": 24,
+  "width": 1280,
+  "height": 704,
+  "steps": 20,
+  "cfg": 5,
+  "sampler": "uni_pc",
+  "scheduler": "simple",
+  "continuitySeed": 24081977,
+  "characterLock": "Spanish-looking male, 25 years old, athletic but natural build, short dark-brown hair, subtle beard, expressive brown eyes, relatable face, dark charcoal casual jacket, dark gray t-shirt, black trousers, dark sneakers, simple black backpack. Same person, face, hair, age, body proportions and travel outfit in every pre-reveal shot.",
+  "visualMaster": "Premium cinematic short-film realism. Contemporary dense American city strongly inspired by New York City without iconic landmarks: brick and stone buildings, steel fire escapes, subway entrances, busy crosswalks, storefronts, cool early-morning light, restrained filmic contrast, realistic skin, natural human movement, observational camera language, 35mm/50mm lens feeling, subtle handheld or stabilized tracking, natural motion blur. Emotional arc: anticipation, nervous excitement, determination, reveal, quiet pride.",
+  "storyRule": "The audience must not know he is going to a gym or starting work as a personal trainer until the final reveal.",
+  "negativeMaster": "low quality, worst quality, overexposed, oversaturated, static pose, frozen frame, deformed anatomy, distorted face, malformed hands, extra fingers, fused fingers, extra limbs, duplicated person, duplicated protagonist, inconsistent age, inconsistent hairstyle, inconsistent clothing, bodybuilder physique, fitness-model posing, gym clue before reveal, sports equipment before reveal, readable brand names, logos, advertising text, subtitles, captions, watermark, surreal elements, videogame look, artificial camera movement",
+  "voiceover": {
+    "masterText": "Vale... hoy es el día. Llevo tanto tiempo imaginándomelo que ahora que está aquí no sé si estoy más nervioso o más ilusionado. Has estudiado. Has practicado. Estás preparado. Solo tienes que cruzar esa puerta. Porque hoy... ya no vengo a entrenar. Hoy empieza mi primer día como entrenador.",
+    "style": "Internal thoughts of the protagonist. Warm Castilian Spanish male voice, approximately 40–50, calm, credible, intimate, not theatrical.",
+    "status": "SCRIPT_READY_AUDIO_NOT_GENERATED"
+  },
+  "shots": [
+    {
+      "id": "SHOT_001_WAKE",
+      "durationSeconds": 4,
+      "frames": 97,
+      "voiceover": "Vale... hoy es el día.",
+      "prompt": "Same established protagonist and exact continuity. Interior of a modest stylish city apartment bedroom at early morning. New-York-inspired buildings softly out of focus beyond the window. Close cinematic shot of the young man asleep. An alarm begins; he immediately opens his eyes with instant awareness, not tiredness. He remains still for a fraction of a second, eyes showing nervous anticipation and excitement, takes one quick breath and sits upright. Soft cool morning window light. Very subtle push-in before he sits up. The audience should feel that something personally important is happening today, but must not know what. No gym clues, no sports objects, no text, no logos."
+    },
+    {
+      "id": "SHOT_002_EXIT_HOME",
+      "durationSeconds": 4,
+      "frames": 97,
+      "voiceover": "Llevo tanto tiempo imaginándomelo...",
+      "prompt": "Same established protagonist and exact continuity. Same New-York-inspired apartment. Fast but believable morning preparation centered on purposeful movement: he puts on the same charcoal jacket, grabs the same black backpack, checks his pockets, almost leaves, pauses half a second as if checking he forgot nothing, then exits. Camera follows closely behind into a narrow urban apartment hallway. Contained nervous excitement, focused eyes, slight restrained smile, quick breathing. Do not reveal backpack contents. No sports equipment, no gym clothing visible, no text, no logos."
+    },
+    {
+      "id": "SHOT_003_CITY",
+      "durationSeconds": 4,
+      "frames": 97,
+      "voiceover": "...que ahora que está aquí no sé si estoy más nervioso...",
+      "prompt": "Same established protagonist and exact continuity. Exterior early morning in a dense contemporary city strongly inspired by New York: tall residential buildings, brick façades, metal fire escapes, storefronts, traffic, crosswalks and commuters. He exits his building and moves quickly along the sidewalk, briefly jogs across a pedestrian crossing and threads naturally around slower pedestrians. Dynamic side tracking camera with a slightly wider environmental beat. Backpack moves naturally with his body. Cool morning atmosphere, energetic but believable. A small involuntary smile appears for a moment. Destination remains unknown. No gym signs, workout imagery or famous landmarks."
+    },
+    {
+      "id": "SHOT_004_SUBWAY",
+      "durationSeconds": 5,
+      "frames": 121,
+      "voiceover": "...o más ilusionado.",
+      "prompt": "Same established protagonist and exact continuity. Interior of a believable underground subway train inspired by the New York City subway during the morning commute. The protagonist sits near the window with the same black backpack beside him. Start medium close-up and slowly move closer. Natural train vibration subtly affects his body and clothing. He looks toward the dark window and briefly sees his reflection. His knee moves slightly with nervous energy. He takes a controlled breath, looks down, then raises his eyes and a tiny excited smile appears that he tries but fails to suppress. Highly realistic facial micro-expression: this matters enormously to him. Other commuters behave naturally and stay secondary. Realistic reflections, anatomy, hands and train movement. Do not reveal destination. No gym clues, no sports equipment, no readable destination text."
+    },
+    {
+      "id": "SHOT_005_LAST_BLOCKS",
+      "durationSeconds": 4,
+      "frames": 97,
+      "voiceover": "Has estudiado. Has practicado.",
+      "prompt": "Same established protagonist and exact continuity. Exterior New-York-inspired neighborhood after leaving the subway: brick and stone façades, small ground-floor businesses, morning traffic, subtle atmospheric haze. He walks quickly toward an unknown destination. Camera starts as a frontal medium tracking shot moving backward so his expression is visible. Determination is replacing anxiety. He adjusts one backpack strap, takes a deeper breath, then the camera naturally drifts toward his side and slightly behind him. His pace becomes deliberate. The audience still cannot know where he is going. No recognizable gym signage, fitness posters, sports imagery or revealing business names."
+    },
+    {
+      "id": "SHOT_006_DOOR",
+      "durationSeconds": 4,
+      "frames": 97,
+      "voiceover": "Estás preparado. Solo tienes que cruzar esa puerta.",
+      "prompt": "Same established protagonist and exact continuity. Exterior entrance of an unidentified ground-floor business in a New-York-inspired urban building. The business must not visually reveal that it is a gym: no gym logo, fitness advertising, dumbbells, workout posters or readable category. Camera directly behind him in a medium-wide rear tracking shot. He approaches the entrance, stops for one quiet second, shoulders rise subtly with a deep breath, looks at the door, hesitates very briefly, exhales, straightens his posture and opens it. Camera stays behind him. Interior beyond the doorway initially appears dark and indistinct. Cut as he crosses the threshold. Cinematic tension through restraint, not melodrama."
+    },
+    {
+      "id": "SHOT_007_REVEAL",
+      "durationSeconds": 3,
+      "frames": 73,
+      "voiceover": "",
+      "prompt": "Same established protagonist and exact continuity. Match cut from the previous doorway crossing. For the first time reveal the interior: a premium professional training gym with strength racks, free weights, cable machines, benches and functional training space. Clean sophisticated professional environment, not a bodybuilding dungeon and not a flashy fitness advertisement. A few trainers and early clients behave naturally in the background. The protagonist pauses briefly and takes in the room; excitement and disbelief appear subtly in his face. Camera makes a small cinematic arc around him. Natural practical gym lighting mixed with ambient daylight. This is the first explicit gym reveal. No logos, no exaggerated pose."
+    },
+    {
+      "id": "SHOT_008_TRAINER",
+      "durationSeconds": 4,
+      "frames": 97,
+      "voiceover": "Porque hoy... ya no vengo a entrenar. Hoy empieza mi primer día como entrenador.",
+      "prompt": "Same established protagonist, same face, hair, age and body. Inside the same gym. Short cinematic transformation sequence: he enters a clean staff changing area, removes the charcoal jacket, opens the same black backpack and for the first time reveals professional trainer clothing. He changes into simple black athletic trousers and a clean fitted black training shirt with no visible logo. Then cut to him leaving the changing area and entering the main training floor. Camera follows slightly behind and to the side. A distant colleague acknowledges him naturally with a small nod. He pauses at the edge of the floor, looks around, takes one calm breath, nervousness becomes a quiet proud smile and he begins walking into the gym with confidence. It must clearly communicate that this is his first day working here as a personal trainer, not his own workout. No heroic pose, no text, no logos."
+    }
+  ]
+}
