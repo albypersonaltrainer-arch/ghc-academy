@@ -3,11 +3,12 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import time
 from pathlib import Path
 
 from gradio_client import Client
 
-SPACE = os.environ.get("GAVE_SPACE", "OpenKing/wan2-video-generation")
+SPACE = os.environ.get("GAVE_SPACE", "Upsampler/wan-2-2-5b-video")
 SHOT_ID = os.environ.get("GAVE_SHOT_ID", "SHOT_001_WAKE")
 OUT = Path(os.environ.get("GAVE_OUT", "gave/runs/wan22_online_probe"))
 OUT.mkdir(parents=True, exist_ok=True)
@@ -27,7 +28,10 @@ master = " ".join(
 )
 prompt = f"{master} {shot['prompt']}".strip()
 
-print(json.dumps({
+def log(*args):
+    print(*args, flush=True)
+
+log(json.dumps({
     "status": "STARTING",
     "space": SPACE,
     "shotId": SHOT_ID,
@@ -37,13 +41,16 @@ print(json.dumps({
     "imageToVideoUsed": False,
 }, ensure_ascii=False))
 
+started = time.time()
 client = Client(SPACE, download_files=str(OUT), verbose=True)
+log("CLIENT_CONNECTED", round(time.time() - started, 2))
 api = client.view_api(return_format="dict")
+log("API_DISCOVERED", round(time.time() - started, 2))
 (OUT / "api.json").write_text(
     json.dumps(api, indent=2, ensure_ascii=False), encoding="utf-8"
 )
 named = api.get("named_endpoints") or {}
-print("NAMED_ENDPOINTS", list(named))
+log("NAMED_ENDPOINTS", list(named))
 
 api_name = None
 for candidate in ("/generate_video", "/predict"):
@@ -60,25 +67,54 @@ if api_name is None and len(named) == 1:
 if not api_name:
     raise RuntimeError(f"No usable generation endpoint found: {list(named)}")
 
-# Connectivity/real-generation probe: 49 frames ~= 2 s at 24 fps.
-# None is intentionally supplied as the image input: PURE TEXT-TO-VIDEO.
-frames = int(os.environ.get("GAVE_PROBE_FRAMES", "49"))
-steps = int(os.environ.get("GAVE_PROBE_STEPS", "20"))
 seed = int(manifest.get("continuitySeed", 24081977))
+steps = int(os.environ.get("GAVE_PROBE_STEPS", "8"))
+probe_seconds = float(os.environ.get("GAVE_PROBE_SECONDS", "1.0"))
+width = int(os.environ.get("GAVE_PROBE_WIDTH", "768"))
+height = int(os.environ.get("GAVE_PROBE_HEIGHT", "448"))
+log("QUEUEING", json.dumps({
+    "space": SPACE,
+    "apiName": api_name,
+    "seconds": probe_seconds,
+    "steps": steps,
+    "width": width,
+    "height": height,
+    "image": None,
+}, ensure_ascii=False))
 
-result = client.predict(
-    prompt,
-    None,
-    1280,
-    704,
-    frames,
-    steps,
-    5.0,
-    seed,
-    api_name=api_name,
-)
-print("RAW_RESULT", repr(result))
+if SPACE == "Upsampler/wan-2-2-5b-video":
+    # API follows the official Wan TI2V Gradio shape:
+    # image, prompt, height, width, duration_seconds, sampling_steps,
+    # guide_scale, shift, seed. Image is deliberately None => T2V only.
+    result = client.predict(
+        None,
+        prompt,
+        height,
+        width,
+        probe_seconds,
+        steps,
+        5.0,
+        5.0,
+        seed,
+        api_name=api_name,
+    )
+else:
+    # OpenKing profile: prompt, image, width, height, frames, steps,
+    # guidance_scale, seed. Kept only as a compatibility fallback.
+    frames = max(25, int(round(probe_seconds * 24)))
+    result = client.predict(
+        prompt,
+        None,
+        width,
+        height,
+        frames,
+        max(20, steps),
+        5.0,
+        seed,
+        api_name=api_name,
+    )
 
+log("RAW_RESULT", repr(result))
 video = result[0] if isinstance(result, (tuple, list)) else result
 status_text = result[1] if isinstance(result, (tuple, list)) and len(result) > 1 else ""
 if video is None:
@@ -97,8 +133,11 @@ report = {
     "space": SPACE,
     "apiName": api_name,
     "shotId": SHOT_ID,
-    "frames": frames,
+    "durationRequestedSeconds": probe_seconds,
     "steps": steps,
+    "width": width,
+    "height": height,
+    "elapsedSeconds": round(time.time() - started, 2),
     "output": str(final),
     "bytes": final.stat().st_size,
     "remoteStatus": str(status_text),
@@ -110,4 +149,4 @@ report = {
 (OUT / "result.json").write_text(
     json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
 )
-print(json.dumps(report, indent=2, ensure_ascii=False))
+log(json.dumps(report, indent=2, ensure_ascii=False))
