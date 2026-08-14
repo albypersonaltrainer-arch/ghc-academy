@@ -6,11 +6,6 @@ on:
       - gave/wan22-t2v-test-01
     paths:
       - 'gave/control/run_online_batch_v2.json'
-      - 'gave/tests/wan22_ti2v_test_02_first_day_directed.json'
-      - 'gave/tests/v2_prompt_overrides.json'
-      - 'gave/qa/v2_manual_review.json'
-      - 'gave/run_online_batch_v2.py'
-      - '.github/workflows/gave-wan-online-v2.yml'
   workflow_dispatch:
 
 permissions:
@@ -33,9 +28,10 @@ jobs:
       GAVE_OUT: gave/runs/wan22_ti2v_test_02_first_day/online
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
-      - name: Checkout experimental GAVE branch
+      - name: Checkout latest experimental GAVE branch state
         uses: actions/checkout@v4
         with:
+          ref: gave/wan22-t2v-test-01
           fetch-depth: 1
 
       - name: Set up Python
@@ -60,13 +56,14 @@ jobs:
           assert m['imageToVideoAllowed'] is False
           assert m['actualSpendEur'] == 0
           assert len(m['shots']) == 14
+          assert abs(sum(o['timingOverrides'].values()) - 30.0) < 0.001
           rejected = next(x for x in r['manualReview'] if x['shotId'] == 'V2_010_GYM_REVEAL')
           assert rejected['status'] == 'REJECTED'
           assert rejected['reuseAllowed'] is False
           override = o['overrides']['V2_010_GYM_REVEAL']
           assert override['nextVersion'] == 2
           assert 'NO OPEN AIR' in override['prompt']
-          print('GAVE DIRECTED V2 QA/VERSIONING: PASS')
+          print('GAVE DIRECTED V2 QA/VERSIONING/TIMING: PASS')
           PY
 
       - name: Confirm HF token without exposing it
@@ -93,7 +90,6 @@ jobs:
             exit 0
           fi
           git commit -m 'test(gave): persist QA-aware directed V2 Wan output'
-          git pull --rebase origin gave/wan22-t2v-test-01
           git push origin HEAD:gave/wan22-t2v-test-01
 
       - name: Enforce zero-cost T2V state
