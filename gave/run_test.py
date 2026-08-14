@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from gave.adapters.comfyui_wan22_ti2v import ComfyUIWan22TI2VAdapter, GaveSafetyError
+from gave.adapters.hf_gradio_wan22_ti2v import HFGradioWan22TI2VAdapter
 
 
 def load_json(path: str | Path) -> dict:
@@ -12,16 +13,7 @@ def load_json(path: str | Path) -> dict:
         return json.load(handle)
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Run a GAVE Wan2.2 T2V manifest shot by shot")
-    parser.add_argument("--manifest", required=True)
-    parser.add_argument("--config", default="gave/config/gave_video.json")
-    parser.add_argument("--dry-run", action="store_true")
-    args = parser.parse_args()
-
-    config = load_json(args.config)
-    manifest = load_json(args.manifest)
-
+def assert_zero_cost_guards(config: dict, manifest: dict) -> None:
     if config.get("PAID_INFERENCE_ALLOWED") is not False:
         raise GaveSafetyError("PAID_INFERENCE_ALLOWED must be false")
     if float(config.get("actualSpendEur", -1)) != 0:
@@ -32,19 +24,14 @@ def main() -> int:
         raise GaveSafetyError("Image generation must remain disabled")
     if config.get("imageToVideoAllowed") is not False:
         raise GaveSafetyError("Image-to-Video must remain disabled")
+    if manifest.get("imageGenerationAllowed") is not False:
+        raise GaveSafetyError("Manifest image generation must be false")
+    if manifest.get("imageToVideoAllowed") is not False:
+        raise GaveSafetyError("Manifest must be pure Text-to-Video")
 
-    if manifest.get("imageGenerationAllowed") is not False or manifest.get("imageToVideoAllowed") is not False:
-        raise GaveSafetyError("Test manifest must be pure Text-to-Video")
 
-    comfy = config["comfyui"]
+def prepare_shots(config: dict, manifest: dict, only_shot: str | None) -> list[dict]:
     wan = config["wan22"]
-    adapter = ComfyUIWan22TI2VAdapter(
-        comfy["baseUrl"],
-        comfy["workflowApiPath"],
-        poll_interval_seconds=int(comfy["pollIntervalSeconds"]),
-        timeout_seconds=int(comfy["timeoutSeconds"]),
-    )
-
     master = " ".join(
         part.strip()
         for part in [
@@ -56,40 +43,73 @@ def main() -> int:
     )
     negative_master = manifest.get("negativeMaster", "")
 
-    prepared_shots = []
-    for index, source in enumerate(manifest["shots"], start=1):
+    shots: list[dict] = []
+    for source in manifest["shots"]:
+        if only_shot and source["id"] != only_shot:
+            continue
         shot = dict(source)
         shot["prompt"] = f"{master} {shot['prompt']}".strip()
         shot["negative_prompt"] = negative_master
-        shot["seed"] = int(manifest.get("continuitySeed", 24081977))
+        shot["seed"] = int(manifest.get("continuitySeed", wan.get("seed", 24081977)))
         shot["steps"] = int(manifest.get("steps", wan["steps"]))
         shot["cfg"] = float(manifest.get("cfg", wan["cfg"]))
-        shot["sampler"] = manifest.get("sampler", wan["sampler"])
-        shot["scheduler"] = manifest.get("scheduler", wan["scheduler"])
+        shot["shift"] = float(manifest.get("shift", wan.get("shift", 5.0)))
+        shot["sampler"] = manifest.get("sampler", wan.get("sampler", "uni_pc"))
+        shot["scheduler"] = manifest.get("scheduler", wan.get("scheduler", "simple"))
         shot["width"] = int(manifest.get("width", wan["width"]))
         shot["height"] = int(manifest.get("height", wan["height"]))
-        prepared_shots.append(shot)
+        shots.append(shot)
 
-    if args.dry_run:
-        print(json.dumps({
-            "status": "PASS",
-            "mode": "DRY_RUN",
-            "testId": manifest["testId"],
-            "backend": manifest["backend"],
-            "shots": [
-                {
-                    "id": s["id"],
-                    "frames": s["frames"],
-                    "durationSeconds": s["durationSeconds"],
-                    "seed": s["seed"],
-                }
-                for s in prepared_shots
-            ],
-            "paidInferenceUsed": False,
-            "actualSpendEur": 0,
-            "imageGenerationUsed": False,
-        }, indent=2, ensure_ascii=False))
-        return 0
+    if only_shot and not shots:
+        raise ValueError(f"Unknown shot id: {only_shot}")
+    return shots
+
+
+def run_online(config: dict, manifest: dict, shots: list[dict]) -> dict:
+    online = config["online"]
+    adapter = HFGradioWan22TI2VAdapter(
+        online["spaceCandidates"],
+        online["downloadDir"],
+        hf_token_env=online.get("hfTokenEnv"),
+        allow_paid_fallback=bool(online.get("allowPaidFallback", False)),
+    )
+
+    connection = adapter.connect()
+    results: list[dict] = []
+    run_dir = Path(online["downloadDir"])
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    for shot in shots:
+        result = adapter.generate_shot(shot)
+        results.append(result)
+        (run_dir / "run_state.json").write_text(
+            json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+        if result.get("status") != "GENERATED":
+            break
+
+    return {
+        "testId": manifest["testId"],
+        "backend": config["GAVE_VIDEO_BACKEND"],
+        "connection": connection,
+        "results": results,
+        "paidInferenceUsed": False,
+        "actualSpendEur": 0,
+        "imageGenerationUsed": False,
+        "imageToVideoUsed": False,
+        "productionTouched": False,
+    }
+
+
+def run_local_comfy(config: dict, manifest: dict, shots: list[dict]) -> dict:
+    comfy = config["comfyui"]
+    wan = config["wan22"]
+    adapter = ComfyUIWan22TI2VAdapter(
+        comfy["baseUrl"],
+        comfy["workflowApiPath"],
+        poll_interval_seconds=int(comfy["pollIntervalSeconds"]),
+        timeout_seconds=int(comfy["timeoutSeconds"]),
+    )
 
     expected_models = {
         "diffusionModel": wan["diffusionModel"],
@@ -98,11 +118,11 @@ def main() -> int:
     }
     preflight = adapter.preflight(expected_models)
 
-    run_dir = Path("gave/runs") / manifest["testId"].lower()
+    run_dir = Path("gave/runs") / manifest["testId"].lower() / "local"
     run_dir.mkdir(parents=True, exist_ok=True)
-    results = []
+    results: list[dict] = []
 
-    for shot in prepared_shots:
+    for shot in shots:
         result = adapter.generate_shot(shot)
         downloaded = []
         for idx, file_ref in enumerate(result["outputs"], start=1):
@@ -116,28 +136,75 @@ def main() -> int:
         result["downloaded"] = downloaded
         results.append(result)
         (run_dir / "run_state.json").write_text(
-            json.dumps(results, indent=2, ensure_ascii=False),
-            encoding="utf-8",
+            json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8"
         )
-
         if result["status"] != "GENERATED":
             break
 
-    final = {
+    return {
         "testId": manifest["testId"],
-        "backend": manifest["backend"],
+        "backend": config["GAVE_VIDEO_BACKEND"],
+        "preflight": preflight,
         "results": results,
         "paidInferenceUsed": False,
         "actualSpendEur": 0,
         "imageGenerationUsed": False,
+        "imageToVideoUsed": False,
         "productionTouched": False,
     }
-    (run_dir / "result.json").write_text(
-        json.dumps(final, indent=2, ensure_ascii=False),
-        encoding="utf-8",
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Run a GAVE Wan2.2 T2V manifest shot by shot")
+    parser.add_argument("--manifest", required=True)
+    parser.add_argument("--config", default="gave/config/gave_video_online.json")
+    parser.add_argument("--shot", help="Run only one shot ID")
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
+
+    config = load_json(args.config)
+    manifest = load_json(args.manifest)
+    assert_zero_cost_guards(config, manifest)
+    shots = prepare_shots(config, manifest, args.shot)
+
+    if args.dry_run:
+        print(json.dumps({
+            "status": "PASS",
+            "mode": "DRY_RUN",
+            "testId": manifest["testId"],
+            "backend": config["GAVE_VIDEO_BACKEND"],
+            "shots": [
+                {
+                    "id": s["id"],
+                    "frames": s["frames"],
+                    "durationSeconds": s["durationSeconds"],
+                    "seed": s["seed"],
+                }
+                for s in shots
+            ],
+            "paidInferenceUsed": False,
+            "actualSpendEur": 0,
+            "imageGenerationUsed": False,
+            "imageToVideoUsed": False,
+            "productionTouched": False,
+        }, indent=2, ensure_ascii=False))
+        return 0
+
+    backend = config["GAVE_VIDEO_BACKEND"]
+    if backend == "HF_GRADIO_WAN22_TI2V":
+        final = run_online(config, manifest, shots)
+    elif backend == "WAN22_TI2V_5B_COMFYUI":
+        final = run_local_comfy(config, manifest, shots)
+    else:
+        raise RuntimeError(f"Unsupported GAVE video backend: {backend}")
+
+    output_dir = Path("gave/runs") / manifest["testId"].lower()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "result.json").write_text(
+        json.dumps(final, indent=2, ensure_ascii=False), encoding="utf-8"
     )
     print(json.dumps(final, indent=2, ensure_ascii=False))
-    return 0 if all(r["status"] == "GENERATED" for r in results) else 2
+    return 0 if all(r.get("status") == "GENERATED" for r in final["results"]) else 2
 
 
 if __name__ == "__main__":
