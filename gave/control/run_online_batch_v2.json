@@ -1,5 +1,5 @@
 {
-  "runLabel": "FIRST_DAY_DIRECTED_V2_CRITICAL_002",
+  "runLabel": "FIRST_DAY_DIRECTED_V2_QUOTA_CHECK_20260814_1631",
   "startShot": 12,
   "maxShots": 1,
   "width": 768,
@@ -10,5 +10,5 @@
   "allowPaidFallback": false,
   "allowImageInput": false,
   "touchProduction": false,
-  "notes": "Controlled V2 comparison at V1 technical quality. Generate only V2_012_AFTER_CHANGE. Clothing change occurs off-camera across an editorial cut. T2V only, zero cost."
+  "notes": "Automation quota check. Retry only V2_012_AFTER_CHANGE. T2V only, input_image=None, zero cost, no production."
 }
