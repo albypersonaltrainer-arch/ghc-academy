@@ -7,12 +7,28 @@
   "imageToVideoAllowed": false,
   "online": {
     "provider": "huggingface_gradio_space",
+    "primarySpace": "Upsampler/wan-2-2-5b-video",
+    "primaryStatus": "PASS",
+    "primaryApiName": "/generate_video",
     "allowPaidFallback": false,
-    "hfTokenEnv": null,
+    "hfTokenEnv": "HF_TOKEN",
+    "authenticationMode": "free-account-only",
     "spaceCandidates": [
-      "Wan-AI/Wan-2.2-5B",
-      "innoai/Wan-2.2-5B",
-      "MindOfDev/Wan-2.2-5B"
+      {
+        "id": "Upsampler/wan-2-2-5b-video",
+        "status": "PASS",
+        "notes": "Validated T2V generation and MP4 download. Live Gradio API discovered successfully."
+      },
+      {
+        "id": "OpenKing/wan2-video-generation",
+        "status": "FAIL",
+        "notes": "Running Space but generation call did not return within 12-minute GAVE probe window."
+      },
+      {
+        "id": "Wan-AI/Wan-2.2-5B",
+        "status": "PENDING",
+        "notes": "Official reference Space is currently paused; retain as reference, not active backend."
+      }
     ],
     "downloadDir": "gave/runs/wan22_ti2v_test_01_first_day/online"
   },
@@ -20,12 +36,21 @@
     "modelFamily": "Wan2.2-TI2V-5B",
     "mode": "text-to-video",
     "fps": 24,
-    "width": 1280,
-    "height": 704,
-    "steps": 20,
-    "cfg": 5,
-    "shift": 5,
-    "seed": 24081977
+    "productionTargetWidth": 1280,
+    "productionTargetHeight": 704,
+    "continuitySeed": 24081977,
+    "validatedProbe": {
+      "shotId": "SHOT_001_WAKE",
+      "durationSeconds": 1.0,
+      "width": 768,
+      "height": 448,
+      "steps": 8,
+      "guidance": 0.0,
+      "seed": 24081977,
+      "elapsedSeconds": 13.33,
+      "bytes": 182638,
+      "status": "PASS"
+    }
   },
   "guards": {
     "sendImageInput": false,
@@ -33,6 +58,7 @@
     "usePaidApi": false,
     "useCredits": false,
     "touchProduction": false,
-    "downloadGeneratedVideoImmediately": true
+    "downloadGeneratedVideoImmediately": true,
+    "stopBeforeAnyPaidQuotaExtension": true
   }
 }
