@@ -17,12 +17,14 @@ permissions:
 jobs:
   shot-001-probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 10
     env:
-      GAVE_SPACE: OpenKing/wan2-video-generation
+      GAVE_SPACE: Upsampler/wan-2-2-5b-video
       GAVE_SHOT_ID: SHOT_001_WAKE
-      GAVE_PROBE_FRAMES: '49'
-      GAVE_PROBE_STEPS: '20'
+      GAVE_PROBE_SECONDS: '1.0'
+      GAVE_PROBE_STEPS: '8'
+      GAVE_PROBE_WIDTH: '768'
+      GAVE_PROBE_HEIGHT: '448'
       GAVE_OUT: gave/runs/wan22_online_probe
     steps:
       - name: Checkout experimental GAVE branch
@@ -37,7 +39,7 @@ jobs:
         run: pip install -r gave/requirements.txt
 
       - name: Generate SHOT 001 via free ZeroGPU T2V
-        run: python gave/run_online_probe.py
+        run: python -u gave/run_online_probe.py
 
       - name: Verify zero-cost safety report
         run: |
