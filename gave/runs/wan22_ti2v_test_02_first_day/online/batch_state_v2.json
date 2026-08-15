@@ -200,7 +200,7 @@
       "overrideUsed": false,
       "errorType": "AppError",
       "error": "You have exceeded your ZeroGPU runs limit. Subscribe to Hugging Face PRO to get 40 min of ZeroGPU quota a day - https://huggingface.co/subscribe/pro?from=ZeroGPU",
-      "elapsedSeconds": 0.67,
+      "elapsedSeconds": 0.31,
       "paidInferenceUsed": false,
       "actualSpendEur": 0,
       "imageGenerationUsed": false,
