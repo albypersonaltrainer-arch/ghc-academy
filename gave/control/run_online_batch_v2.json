@@ -1,7 +1,7 @@
 {
-  "runLabel": "FIRST_DAY_DIRECTED_V2_GYM_REVEAL_V2_QUOTA_CHECK_20260815_0830",
-  "startShot": 10,
-  "maxShots": 1,
+  "runLabel": "FIRST_DAY_DIRECTED_V2_RESUME_ALL_PENDING_20260815_1533",
+  "startShot": 1,
+  "maxShots": 14,
   "width": 768,
   "height": 448,
   "steps": 4,
@@ -10,5 +10,5 @@
   "allowPaidFallback": false,
   "allowImageInput": false,
   "touchProduction": false,
-  "notes": "Automated quota recheck: retry rejected V2_010_GYM_REVEAL as version 2 with QA override enforcing a clearly enclosed indoor professional gym. T2V only, input_image=None, zero cost, no production."
+  "notes": "Resume all pending Directed V2 shots sequentially using QA-aware runner. Preserve existing valid clips, keep V2_010_GYM_REVEAL v1 rejected and reuse forbidden, reuse generated v2 only. Wan T2V only with input_image=None, zero cost, no I2V, no image generation, Production untouched. Stop naturally and preserve batch_state_v2.json if ZeroGPU quota is exhausted."
 }
