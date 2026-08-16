@@ -21,20 +21,20 @@
       "id": "FASTVIDEO_FASTWAN21_1_3B",
       "role": "PRIMARY_SPEED_TEST",
       "model": "FastVideo/FastWan2.1-T2V-1.3B-Diffusers",
-      "framework": "FastVideo",
+      "framework": "FastVideo_WITH_DIFFUSERS_FALLBACK",
       "attentionBackend": "TORCH_SDPA",
-      "status": "PREPARED_NOT_REMOTE_TESTED"
+      "status": "REMOTE_TEST_IN_PROGRESS"
     }
   ],
   "smokeTest": {
     "shotId": "LIGHTNING_T4_GYM_REVEAL_001",
     "prompt": "Wide cinematic establishing shot from several metres inside a fully enclosed premium professional strength and conditioning gym. Clearly visible solid ceiling, structural columns, artificial ceiling lights, deep indoor floor plan, power racks, barbells, free weights, cable machines and adjustable benches. A few trainers and clients move naturally in the background. Absolutely no open air, no rooftop, no terrace, no courtyard, no patio, no visible sky, no exterior pavement. Realistic documentary cinematography, natural movement, no logos, no text.",
     "width": 832,
-    "height": 480,
+    "height": 448,
     "numFrames": 49,
     "fps": 16,
     "durationSecondsApprox": 3.06,
-    "steps": 4,
+    "steps": 3,
     "guidance": 1.0,
     "seed": 24081977
   },
