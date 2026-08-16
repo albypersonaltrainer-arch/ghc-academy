@@ -11,6 +11,7 @@ OUT = Path('gave/runs/wan22_ti2v_test_02_first_day/online')
 WORK = OUT / '_assembly_v2'
 FINAL = OUT / 'first_day_directed_v2_picture_lock.mp4'
 STATE = OUT / 'picture_lock_v2_state.json'
+FPS = 24
 
 
 def load(path: Path) -> dict:
@@ -51,10 +52,22 @@ def main() -> int:
         if not src.exists():
             raise SystemExit(f'Missing required V2 shot: {src}')
         duration = float(timings[shot_id])
+        target_frames = round(duration * FPS)
+        if abs(target_frames / FPS - duration) > 0.001:
+            raise SystemExit(f'Timing for {shot_id} is not representable exactly at {FPS} fps: {duration}')
         dst = WORK / f'{idx:02d}_{shot_id.lower()}_v{version}.mp4'
+        # Some generated clips are a few frames shorter than their directed timing.
+        # Clone the last frame when needed, then trim by exact frame count so every
+        # timingOverride is honored deterministically at 24 fps.
+        vf = (
+            'scale=768:448:force_original_aspect_ratio=decrease,'
+            'pad=768:448:(ow-iw)/2:(oh-ih)/2,'
+            f'fps={FPS},tpad=stop_mode=clone:stop_duration={duration:.3f},'
+            f'trim=end_frame={target_frames},setpts=PTS-STARTPTS,format=yuv420p'
+        )
         run([
-            'ffmpeg', '-y', '-i', str(src), '-t', f'{duration:.3f}',
-            '-vf', 'scale=768:448:force_original_aspect_ratio=decrease,pad=768:448:(ow-iw)/2:(oh-ih)/2,fps=24,format=yuv420p',
+            'ffmpeg', '-y', '-i', str(src),
+            '-vf', vf,
             '-an', '-c:v', 'libx264', '-preset', 'medium', '-crf', '18',
             '-movflags', '+faststart', str(dst)
         ])
@@ -63,6 +76,7 @@ def main() -> int:
             'shotId': shot_id,
             'version': version,
             'durationSeconds': duration,
+            'targetFrames': target_frames,
             'transitionIn': shot.get('transitionIn'),
             'source': str(src),
         })
@@ -72,7 +86,7 @@ def main() -> int:
     run([
         'ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', str(concat),
         '-an', '-c:v', 'libx264', '-preset', 'medium', '-crf', '18',
-        '-pix_fmt', 'yuv420p', '-movflags', '+faststart', str(FINAL)
+        '-r', str(FPS), '-pix_fmt', 'yuv420p', '-movflags', '+faststart', str(FINAL)
     ])
 
     probe = subprocess.check_output([
@@ -80,7 +94,7 @@ def main() -> int:
     ], text=True)
     p = json.loads(probe)['format']
     duration = float(p['duration'])
-    if abs(duration - 30.0) > 0.25:
+    if abs(duration - 30.0) > (1.0 / FPS + 0.001):
         raise SystemExit(f'Unexpected V2 duration {duration}')
 
     state = {
