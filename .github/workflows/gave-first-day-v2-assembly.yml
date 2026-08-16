@@ -6,6 +6,7 @@ on:
       - gave/wan22-t2v-test-01
     paths:
       - 'gave/runs/wan22_ti2v_test_02_first_day/online/batch_state_v2.json'
+      - 'gave/control/run_online_batch_v2.json'
   workflow_dispatch:
 
 permissions:
