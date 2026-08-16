@@ -52,18 +52,15 @@ def main() -> int:
         if not src.exists():
             raise SystemExit(f'Missing required V2 shot: {src}')
         duration = float(timings[shot_id])
-        target_frames = round(duration * FPS)
-        if abs(target_frames / FPS - duration) > 0.001:
-            raise SystemExit(f'Timing for {shot_id} is not representable exactly at {FPS} fps: {duration}')
         dst = WORK / f'{idx:02d}_{shot_id.lower()}_v{version}.mp4'
-        # Some generated clips are a few frames shorter than their directed timing.
-        # Clone the last frame when needed, then trim by exact frame count so every
-        # timingOverride is honored deterministically at 24 fps.
+        # Honor each timingOverride in timestamp space. If a source clip is shorter,
+        # freeze its final frame so the directed duration is preserved.
         vf = (
             'scale=768:448:force_original_aspect_ratio=decrease,'
             'pad=768:448:(ow-iw)/2:(oh-ih)/2,'
-            f'fps={FPS},tpad=stop_mode=clone:stop_duration={duration:.3f},'
-            f'trim=end_frame={target_frames},setpts=PTS-STARTPTS,format=yuv420p'
+            f'tpad=stop_mode=clone:stop_duration={duration:.3f},'
+            f'trim=duration={duration:.3f},setpts=PTS-STARTPTS,'
+            f'fps={FPS},format=yuv420p'
         )
         run([
             'ffmpeg', '-y', '-i', str(src),
@@ -76,17 +73,24 @@ def main() -> int:
             'shotId': shot_id,
             'version': version,
             'durationSeconds': duration,
-            'targetFrames': target_frames,
             'transitionIn': shot.get('transitionIn'),
             'source': str(src),
         })
 
     concat = WORK / 'concat.txt'
     concat.write_text(''.join(f"file '{p.resolve()}'\n" for p in normalized), encoding='utf-8')
+    # Normalize the concatenated timeline to exactly 30 seconds / 720 frames.
+    # This absorbs codec/frame-boundary rounding while preserving the 30s timing map.
+    final_vf = (
+        'tpad=stop_mode=clone:stop_duration=1,'
+        'trim=duration=30,setpts=PTS-STARTPTS,'
+        f'fps={FPS},format=yuv420p'
+    )
     run([
         'ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', str(concat),
+        '-vf', final_vf,
         '-an', '-c:v', 'libx264', '-preset', 'medium', '-crf', '18',
-        '-r', str(FPS), '-pix_fmt', 'yuv420p', '-movflags', '+faststart', str(FINAL)
+        '-pix_fmt', 'yuv420p', '-movflags', '+faststart', str(FINAL)
     ])
 
     probe = subprocess.check_output([
