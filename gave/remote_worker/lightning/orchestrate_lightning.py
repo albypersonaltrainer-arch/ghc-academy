@@ -57,8 +57,6 @@ def recover_last(studio: Studio) -> None:
 def generate_smoke(studio: Studio) -> None:
     started = False
     try:
-        # Interruptible T4 only. Account-level billing safeguards remain external;
-        # GAVE itself never enables paid inference or a paid-provider fallback.
         studio.start(Machine.T4, interruptible=True)
         started = True
 
@@ -98,8 +96,10 @@ bash gave/remote_worker/lightning/run_gpu_smoke.sh
 
 
 def main() -> int:
-    required_env("LIGHTNING_USER_ID")
-    required_env("LIGHTNING_API_KEY")
+    # Normalize credentials from CI secrets before Lightning SDK reads them.
+    os.environ["LIGHTNING_USER_ID"] = required_env("LIGHTNING_USER_ID")
+    os.environ["LIGHTNING_API_KEY"] = required_env("LIGHTNING_API_KEY")
+
     if os.environ.get("GAVE_ALLOW_PAID", "false").lower() not in {"false", "0", "no"}:
         raise RuntimeError("GAVE_ALLOW_PAID must remain false")
 
@@ -108,9 +108,9 @@ def main() -> int:
         print("GAVE Lightning request disabled; nothing to do.")
         return 0
 
-    org = os.environ.get("LIGHTNING_ORG", DEFAULT_ORG)
-    teamspace = os.environ.get("LIGHTNING_TEAMSPACE", DEFAULT_TEAMSPACE)
-    studio_name = os.environ.get("LIGHTNING_STUDIO", DEFAULT_STUDIO)
+    org = os.environ.get("LIGHTNING_ORG", DEFAULT_ORG).strip()
+    teamspace = os.environ.get("LIGHTNING_TEAMSPACE", DEFAULT_TEAMSPACE).strip()
+    studio_name = os.environ.get("LIGHTNING_STUDIO", DEFAULT_STUDIO).strip()
     studio = Studio(name=studio_name, teamspace=teamspace, org=org)
     LOCAL_OUT.mkdir(parents=True, exist_ok=True)
 
