@@ -11,8 +11,9 @@ DEFAULT_ORG = "GAVE"
 DEFAULT_TEAMSPACE = "deploy-model-project"
 DEFAULT_STUDIO = "deploy-model-devbox"
 REMOTE_REPO_ABS = "/teamspace/studios/this_studio/ghc-academy"
-REMOTE_STATE_ABS = f"{REMOTE_REPO_ABS}/.gave/lightning/output/worker_state.json"
-REMOTE_LAST_VIDEO_ABS = f"{REMOTE_REPO_ABS}/.gave/lightning/output/lightning_t4_gym_reveal_001_diffusers.mp4"
+REMOTE_REPO_REL = "ghc-academy"
+REMOTE_STATE_REL = f"{REMOTE_REPO_REL}/.gave/lightning/output/worker_state.json"
+REMOTE_LAST_VIDEO_REL = f"{REMOTE_REPO_REL}/.gave/lightning/output/lightning_t4_gym_reveal_001_diffusers.mp4"
 REQUEST_PATH = Path("gave/control/lightning_request.json")
 LOCAL_OUT = Path("artifacts/lightning")
 
@@ -45,13 +46,14 @@ def download(studio: Studio, remote_path: str, local_path: Path) -> None:
 
 
 def recover_last(studio: Studio) -> None:
-    # Studio files persist while sleeping. Recovery does not require GPU compute.
-    download(studio, REMOTE_LAST_VIDEO_ABS, LOCAL_OUT / Path(REMOTE_LAST_VIDEO_ABS).name)
+    # Lightning SDK file transfers use paths relative to the Studio content root.
+    # Studio storage persists while sleeping; this does not require GPU compute.
+    download(studio, REMOTE_LAST_VIDEO_REL, LOCAL_OUT / Path(REMOTE_LAST_VIDEO_REL).name)
     try:
-        download(studio, REMOTE_STATE_ABS, LOCAL_OUT / "worker_state.json")
+        download(studio, REMOTE_STATE_REL, LOCAL_OUT / "worker_state.json")
     except Exception as exc:
         print(f"WARNING: state recovery failed but video recovery succeeded: {exc}")
-    print(f"GAVE_VIDEO={LOCAL_OUT / Path(REMOTE_LAST_VIDEO_ABS).name}")
+    print(f"GAVE_VIDEO={LOCAL_OUT / Path(REMOTE_LAST_VIDEO_REL).name}")
 
 
 def generate_smoke(studio: Studio) -> None:
@@ -74,7 +76,7 @@ bash gave/remote_worker/lightning/run_gpu_smoke.sh
         if exit_code != 0:
             raise RuntimeError(f"Remote generation failed with exit code {exit_code}")
 
-        download(studio, REMOTE_STATE_ABS, LOCAL_OUT / "worker_state.json")
+        download(studio, REMOTE_STATE_REL, LOCAL_OUT / "worker_state.json")
         state = json.loads((LOCAL_OUT / "worker_state.json").read_text(encoding="utf-8"))
         if state.get("status") != "GENERATED":
             raise RuntimeError(f"Remote worker did not finish GENERATED: {state}")
@@ -82,8 +84,12 @@ bash gave/remote_worker/lightning/run_gpu_smoke.sh
         remote_output = str(state.get("output", ""))
         if not remote_output:
             raise RuntimeError("Remote worker state contains no output path")
-        if not remote_output.startswith("/"):
-            remote_output = f"{REMOTE_REPO_ABS}/{remote_output.lstrip('/')}"
+        if "/ghc-academy/" in remote_output:
+            remote_output = "ghc-academy/" + remote_output.split("/ghc-academy/", 1)[1]
+        elif remote_output.startswith("ghc-academy/"):
+            pass
+        else:
+            remote_output = f"{REMOTE_REPO_REL}/{remote_output.lstrip('/')}"
         local_video = LOCAL_OUT / Path(remote_output).name
         download(studio, remote_output, local_video)
         print(f"GAVE_VIDEO={local_video}")
@@ -96,7 +102,6 @@ bash gave/remote_worker/lightning/run_gpu_smoke.sh
 
 
 def main() -> int:
-    # Normalize credentials from CI secrets before Lightning SDK reads them.
     os.environ["LIGHTNING_USER_ID"] = required_env("LIGHTNING_USER_ID")
     os.environ["LIGHTNING_API_KEY"] = required_env("LIGHTNING_API_KEY")
 
