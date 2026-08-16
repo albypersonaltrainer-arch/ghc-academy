@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${GAVE_ALLOW_PAID:-false}" != "false" ]]; then
+  echo "Refusing to run: GAVE_ALLOW_PAID must be false" >&2
+  exit 70
+fi
+
+ROOT="/teamspace/studios/this_studio/ghc-academy"
+RUNTIME="$ROOT/.gave/lightning/skyreels_v2"
+UPSTREAM="$RUNTIME/SkyReels-V2"
+VENV="$RUNTIME/venv"
+OUTROOT="$ROOT/.gave/lightning/output"
+STATE="$OUTROOT/skyreels_continuity_state.json"
+MANIFEST="$ROOT/gave/tests/skyreels_v2_continuity_first_day.json"
+UPSTREAM_COMMIT="9351d13152207cc04de780e055346b08ade0b851"
+MODEL_ID="Skywork/SkyReels-V2-DF-1.3B-540P"
+
+mkdir -p "$RUNTIME" "$OUTROOT"
+cd "$ROOT"
+
+python - <<'PY'
+import json
+from pathlib import Path
+m = json.loads(Path('gave/tests/skyreels_v2_continuity_first_day.json').read_text())
+s = m['safety']
+assert s['paidInferenceAllowed'] is False
+assert float(s['actualSpendEur']) == 0
+assert s['productionAllowed'] is False
+assert s['imageGenerationAllowed'] is False
+assert s['imageToVideoAllowed'] is False
+assert s['referenceImageAllowed'] is False
+assert s['frameExtractionAllowed'] is False
+print('GAVE SkyReels continuity safety: PASS')
+PY
+
+nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader
+python --version
+
+if [[ ! -d "$UPSTREAM/.git" ]]; then
+  git clone https://github.com/SkyworkAI/SkyReels-V2.git "$UPSTREAM"
+fi
+cd "$UPSTREAM"
+git fetch origin "$UPSTREAM_COMMIT" --depth=1
+git checkout --detach "$UPSTREAM_COMMIT"
+
+if [[ ! -x "$VENV/bin/python" ]]; then
+  python -m venv --system-site-packages "$VENV"
+fi
+PY="$VENV/bin/python"
+PIP="$VENV/bin/pip"
+
+"$PY" -m pip install --upgrade pip setuptools wheel
+# Install the required runtime deliberately without flash-attn/xFuser. SkyReels
+# has a PyTorch SDPA fallback, which avoids a fragile source build on the T4.
+"$PIP" install \
+  'diffusers>=0.31.0,<0.40' \
+  'transformers==4.49.0' \
+  'tokenizers==0.21.1' \
+  'accelerate==1.6.0' \
+  'opencv-python==4.10.0.84' \
+  'numpy>=1.23.5,<2' \
+  tqdm imageio easydict ftfy imageio-ffmpeg 'moviepy==1.0.3' huggingface_hub safetensors sentencepiece
+
+# T4 is a Turing GPU. The upstream script defaults to bfloat16; use fp16 here
+# to keep the official 1.3B Diffusion-Forcing model viable on this worker.
+"$PY" - <<'PY'
+from pathlib import Path
+p = Path('generate_video_df.py')
+s = p.read_text()
+s = s.replace('weight_dtype=torch.bfloat16', 'weight_dtype=torch.float16')
+p.write_text(s)
+print('SkyReels worker dtype patch: fp16')
+PY
+
+"$PY" - <<'PY'
+import json
+from pathlib import Path
+m = json.loads(Path('/teamspace/studios/this_studio/ghc-academy/gave/tests/skyreels_v2_continuity_first_day.json').read_text())
+Path('/tmp/gave_shot_a.txt').write_text(m['shotA']['prompt'])
+Path('/tmp/gave_shot_b.txt').write_text(m['shotBExtension']['prompt'])
+PY
+PROMPT_A="$(cat /tmp/gave_shot_a.txt)"
+PROMPT_B="$(cat /tmp/gave_shot_b.txt)"
+
+rm -rf result/gave_first_day_initial result/gave_first_day_extended
+mkdir -p result/gave_first_day_initial result/gave_first_day_extended
+
+START_TS=$(date +%s)
+
+# Stage A: text-to-video. No image or reference frame is supplied.
+"$PY" generate_video_df.py \
+  --model_id "$MODEL_ID" \
+  --resolution 540P \
+  --ar_step 0 \
+  --base_num_frames 77 \
+  --num_frames 97 \
+  --overlap_history 17 \
+  --prompt "$PROMPT_A" \
+  --addnoise_condition 20 \
+  --guidance_scale 6.0 \
+  --shift 8.0 \
+  --inference_steps 30 \
+  --fps 24 \
+  --seed 19771220 \
+  --offload \
+  --outdir gave_first_day_initial
+
+INITIAL=$(find result/gave_first_day_initial -type f -name '*.mp4' -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)
+if [[ -z "${INITIAL:-}" || ! -s "$INITIAL" ]]; then
+  echo "SkyReels initial segment missing" >&2
+  exit 71
+fi
+cp "$INITIAL" "$OUTROOT/skyreels_first_day_initial_v1.mp4"
+
+# Stage B: extend the actual generated video. This is the continuity mechanism:
+# the previous frames are the temporal condition. No image generation, no I2V.
+"$PY" generate_video_df.py \
+  --model_id "$MODEL_ID" \
+  --resolution 540P \
+  --ar_step 0 \
+  --base_num_frames 77 \
+  --num_frames 97 \
+  --overlap_history 17 \
+  --prompt "$PROMPT_B" \
+  --addnoise_condition 20 \
+  --guidance_scale 6.0 \
+  --shift 8.0 \
+  --inference_steps 30 \
+  --fps 24 \
+  --seed 19771220 \
+  --offload \
+  --video_path "$INITIAL" \
+  --outdir gave_first_day_extended
+
+EXTENDED=$(find result/gave_first_day_extended -type f -name '*.mp4' -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)
+if [[ -z "${EXTENDED:-}" || ! -s "$EXTENDED" ]]; then
+  echo "SkyReels extended segment missing" >&2
+  exit 72
+fi
+cp "$EXTENDED" "$OUTROOT/skyreels_first_day_continuity_v1.mp4"
+
+END_TS=$(date +%s)
+"$PY" - <<PY
+import json, os, subprocess
+from pathlib import Path
+out = Path('$OUTROOT')
+video = out / 'skyreels_first_day_continuity_v1.mp4'
+initial = out / 'skyreels_first_day_initial_v1.mp4'
+
+def probe(path):
+    cmd = ['ffprobe','-v','error','-show_entries','format=duration,size','-show_entries','stream=width,height,r_frame_rate,codec_name','-of','json',str(path)]
+    try:
+        return json.loads(subprocess.check_output(cmd, text=True))
+    except Exception as exc:
+        return {'probeError': str(exc)}
+
+state = {
+  'schema': 'GAVE_SKYREELS_CONTINUITY_STATE_V1',
+  'status': 'GENERATED',
+  'engine': 'SkyReels-V2-DF-1.3B-540P',
+  'upstreamCommit': '$UPSTREAM_COMMIT',
+  'initialOutput': str(initial.relative_to(Path('$ROOT'))),
+  'output': str(video.relative_to(Path('$ROOT'))),
+  'elapsedSeconds': int('$END_TS') - int('$START_TS'),
+  'initialProbe': probe(initial),
+  'outputProbe': probe(video),
+  'continuityMechanism': 'VIDEO_EXTENSION_FROM_PREVIOUS_GENERATED_SEGMENT',
+  'qaStatus': 'PENDING_HUMAN_REVIEW',
+  'paidInferenceUsed': False,
+  'actualSpendEur': 0,
+  'productionTouched': False,
+  'imageGenerationUsed': False,
+  'imageToVideoUsed': False,
+  'referenceImageUsed': False,
+  'frameExtractionUsed': False,
+  'videoToVideoExtensionUsed': True
+}
+Path('$STATE').write_text(json.dumps(state, indent=2), encoding='utf-8')
+print(json.dumps(state, indent=2))
+PY
+
+echo "GAVE_SKYREELS_VIDEO=$OUTROOT/skyreels_first_day_continuity_v1.mp4"
