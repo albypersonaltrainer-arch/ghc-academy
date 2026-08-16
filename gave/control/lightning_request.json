@@ -1,0 +1,13 @@
+{
+  "schema": "GAVE_LIGHTNING_REQUEST_V1",
+  "requestId": "bootstrap-0000",
+  "enabled": false,
+  "operation": "SMOKE_TEST",
+  "backend": "FASTVIDEO_FASTWAN21_1_3B",
+  "machine": "T4_INTERRUPTIBLE",
+  "paidInferenceAllowed": false,
+  "actualSpendEur": 0,
+  "productionAllowed": false,
+  "imageGenerationAllowed": false,
+  "imageToVideoAllowed": false
+}
