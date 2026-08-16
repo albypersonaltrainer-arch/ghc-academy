@@ -1,0 +1,86 @@
+{
+  "schema": "GAVE_CONTINUITY_BENCHMARK_V1",
+  "benchmarkId": "first_day_skyreels_v2_df_13b_v1",
+  "purpose": "Validate temporal character and wardrobe continuity before any longer GAVE documentary assembly.",
+  "story": "A young man starts his first day as a personal trainer. This benchmark covers the opening bedroom sequence only and must preserve the same person continuously across generation and video extension.",
+  "engine": {
+    "family": "SkyReels-V2",
+    "model": "Skywork/SkyReels-V2-DF-1.3B-540P",
+    "mode": "DIFFUSION_FORCING_T2V_PLUS_VIDEO_EXTENSION",
+    "resolution": "540P",
+    "width": 960,
+    "height": 544,
+    "fps": 24,
+    "initialFrames": 97,
+    "extensionFrames": 97,
+    "baseNumFrames": 77,
+    "overlapHistory": 17,
+    "inferenceSteps": 30,
+    "guidanceScale": 6.0,
+    "shift": 8.0,
+    "addNoiseCondition": 20,
+    "seed": 19771220,
+    "offload": true,
+    "teacache": false
+  },
+  "characterCanon": {
+    "role": "young man on the morning of his first day as a personal trainer",
+    "age": "24-27",
+    "skin": "light olive",
+    "hair": "short dark brown hair",
+    "face": "slight stubble, natural non-model face",
+    "build": "lean athletic, realistic",
+    "initialWardrobe": "charcoal crew-neck T-shirt and dark grey sweatpants",
+    "addedWardrobeOnly": "plain black zip hoodie",
+    "prop": "plain black gym backpack"
+  },
+  "shotA": {
+    "prompt": "Premium realistic documentary cinema, early morning in a modest contemporary Madrid apartment bedroom. A 25-year-old young man with light olive skin, short dark brown hair, slight stubble and a lean athletic build wakes to a phone alarm. He wears a charcoal crew-neck T-shirt and dark grey sweatpants. He opens his eyes, turns off the alarm, sits on the edge of the bed and takes a quiet nervous breath because today is his first day working as a personal trainer. Natural cool dawn window light, believable skin texture, anatomically correct hands and face, restrained handheld documentary camera, medium-wide to medium framing, subtle camera movement, physically natural motion, realistic bedroom, sober cinematic color, no glamour, no text, no logos, no wardrobe changes.",
+    "mustShow": [
+      "same clearly readable young man",
+      "charcoal T-shirt",
+      "dark grey sweatpants",
+      "wake-up action",
+      "nervous but hopeful expression"
+    ]
+  },
+  "shotBExtension": {
+    "prompt": "Continue the previous video without changing the person. The exact same young man must retain the same face, short dark brown hair, slight stubble, body proportions, charcoal T-shirt and dark grey sweatpants. He stands naturally from the bed, puts on only a plain black zip hoodie over the existing charcoal T-shirt, picks up the same plain black gym backpack and walks toward the bedroom doorway with focused first-day nerves. Preserve the same bedroom, dawn lighting, skin tone, facial identity and documentary camera language. Natural human movement, anatomically correct hands, no morphing, no sudden outfit replacement, no new person, no text, no logos.",
+    "continuityMustPreserve": [
+      "face identity",
+      "hair",
+      "skin tone",
+      "body proportions",
+      "charcoal T-shirt",
+      "dark grey sweatpants",
+      "bedroom geometry",
+      "dawn lighting"
+    ]
+  },
+  "qualityGate": {
+    "status": "PENDING_HUMAN_REVIEW",
+    "passRequires": [
+      "character remains recognizably the same across the extension boundary",
+      "no unexplained wardrobe mutation",
+      "no major facial or anatomical deformation",
+      "motion is credible enough for premium educational documentary use",
+      "extension seam is not visually disruptive"
+    ],
+    "failFast": [
+      "identity drift",
+      "wardrobe mutation",
+      "severe anatomy failure",
+      "unreadable face",
+      "obvious temporal discontinuity"
+    ]
+  },
+  "safety": {
+    "paidInferenceAllowed": false,
+    "actualSpendEur": 0,
+    "productionAllowed": false,
+    "imageGenerationAllowed": false,
+    "imageToVideoAllowed": false,
+    "referenceImageAllowed": false,
+    "frameExtractionAllowed": false
+  }
+}
