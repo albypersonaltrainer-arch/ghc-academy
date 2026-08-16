@@ -59,8 +59,23 @@ jobs:
       - name: Validate Lightning credentials
         shell: bash
         run: |
-          test -n "$LIGHTNING_USER_ID" || { echo "Missing LIGHTNING_USER_ID secret"; exit 20; }
-          test -n "$LIGHTNING_API_KEY" || { echo "Missing LIGHTNING_API_KEY secret"; exit 21; }
+          python - <<'PY'
+          import os
+          uid = os.environ.get('LIGHTNING_USER_ID', '')
+          key = os.environ.get('LIGHTNING_API_KEY', '')
+          if not uid:
+              raise SystemExit('Missing LIGHTNING_USER_ID secret')
+          if not key:
+              raise SystemExit('Missing LIGHTNING_API_KEY secret')
+          for name, value in [('LIGHTNING_USER_ID', uid), ('LIGHTNING_API_KEY', key)]:
+              if '*' in value:
+                  raise SystemExit(f'{name} contains asterisks: the masked display value was saved instead of the real credential')
+              if value != value.strip():
+                  raise SystemExit(f'{name} contains leading/trailing whitespace')
+              if '=' in value or 'lightning login' in value.lower() or name + '=' in value:
+                  raise SystemExit(f'{name} appears to contain the assignment/CLI command instead of only the credential value')
+          print(f'Lightning credential shape: PASS uid_len={len(uid)} key_len={len(key)}')
+          PY
 
       - name: Generate remotely and recover MP4
         run: python gave/remote_worker/lightning/orchestrate_lightning.py
