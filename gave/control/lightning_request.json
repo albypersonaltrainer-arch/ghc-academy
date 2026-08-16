@@ -1,10 +1,10 @@
 {
   "schema": "GAVE_LIGHTNING_REQUEST_V1",
-  "requestId": "skyreels-recover-0006",
+  "requestId": "skyreels-continuity-0007",
   "enabled": true,
-  "operation": "SKYREELS_RECOVER",
+  "operation": "SKYREELS_CONTINUITY_TEST",
   "backend": "SKYREELS_V2_DF_1_3B_540P",
-  "machine": "NO_GPU_RECOVERY",
+  "machine": "T4_INTERRUPTIBLE",
   "paidInferenceAllowed": false,
   "actualSpendEur": 0,
   "productionAllowed": false,
