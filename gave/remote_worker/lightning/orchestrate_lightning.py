@@ -103,9 +103,8 @@ def generate_smoke(studio: Studio) -> None:
     print(f"GAVE_VIDEO={local_video}")
 
 
-def skyreels_continuity(studio: Studio) -> None:
-    _run_on_t4(studio, "gave/remote_worker/lightning/run_skyreels_v2_continuity.sh")
-
+def recover_skyreels(studio: Studio) -> None:
+    """Recover persisted SkyReels outputs without starting any GPU."""
     local_state = LOCAL_OUT / "skyreels_continuity_state.json"
     download(studio, REMOTE_SKYREELS_STATE_REL, local_state)
     state = json.loads(local_state.read_text(encoding="utf-8"))
@@ -129,6 +128,25 @@ def skyreels_continuity(studio: Studio) -> None:
     download(studio, REMOTE_SKYREELS_INITIAL_REL, LOCAL_OUT / Path(REMOTE_SKYREELS_INITIAL_REL).name)
     download(studio, REMOTE_SKYREELS_VIDEO_REL, LOCAL_OUT / Path(REMOTE_SKYREELS_VIDEO_REL).name)
     print(f"GAVE_VIDEO={LOCAL_OUT / Path(REMOTE_SKYREELS_VIDEO_REL).name}")
+
+
+def skyreels_continuity(studio: Studio) -> None:
+    try:
+        _run_on_t4(studio, "gave/remote_worker/lightning/run_skyreels_v2_continuity.sh")
+    except Exception as exc:
+        # Interruptible Lightning workers can disappear while the SDK is polling.
+        # Studio storage persists, so first try to recover a completed result before
+        # treating the transport/preemption error as a failed generation.
+        print(f"WARNING: SkyReels remote command ended abnormally: {exc}")
+        try:
+            recover_skyreels(studio)
+            print("SkyReels persisted result recovered after remote command interruption.")
+            return
+        except Exception as recovery_exc:
+            print(f"SkyReels recovery after interruption did not find a complete result: {recovery_exc}")
+            raise
+
+    recover_skyreels(studio)
 
 
 def main() -> int:
@@ -155,6 +173,9 @@ def main() -> int:
         return 0
     if operation == "SMOKE_TEST":
         generate_smoke(studio)
+        return 0
+    if operation == "SKYREELS_RECOVER":
+        recover_skyreels(studio)
         return 0
     if operation == "SKYREELS_CONTINUITY_TEST":
         skyreels_continuity(studio)
