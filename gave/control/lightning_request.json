@@ -1,8 +1,8 @@
 {
   "schema": "GAVE_LIGHTNING_REQUEST_V1",
-  "requestId": "bootstrap-0000",
-  "enabled": false,
-  "operation": "SMOKE_TEST",
+  "requestId": "recover-last-0001",
+  "enabled": true,
+  "operation": "RECOVER_LAST",
   "backend": "FASTVIDEO_FASTWAN21_1_3B",
   "machine": "T4_INTERRUPTIBLE",
   "paidInferenceAllowed": false,
