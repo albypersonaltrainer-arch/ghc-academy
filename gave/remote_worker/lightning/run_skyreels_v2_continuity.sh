@@ -14,6 +14,12 @@ STATE="$OUTROOT/skyreels_continuity_state.json"
 UPSTREAM_COMMIT="9351d13152207cc04de780e055346b08ade0b851"
 MODEL_ID="Skywork/SkyReels-V2-DF-1.3B-540P"
 PY="python"
+BASE_FRAMES=49
+NUM_FRAMES=49
+OVERLAP=17
+STEPS=16
+FPS=24
+SEED=19771220
 
 mkdir -p "$RUNTIME" "$OUTROOT"
 cd "$ROOT"
@@ -64,9 +70,6 @@ print('gpu', torch.cuda.get_device_name(0))
 PY
 
 # T4/Turing compatibility: use fp16 and route Wan attention through PyTorch SDPA.
-# Upstream directly calls flash_attention() in transformer.py, which asserts when
-# FlashAttention-2 is unavailable; FA2 does not support Turing. The repository's
-# own attention() wrapper already contains an SDPA fallback, so use that instead.
 $PY - <<'PY'
 from pathlib import Path
 p = Path('generate_video_df.py')
@@ -99,23 +102,25 @@ PROMPT_B="$(cat /tmp/gave_shot_b.txt)"
 
 rm -rf result/gave_first_day_initial result/gave_first_day_extended
 mkdir -p result/gave_first_day_initial result/gave_first_day_extended
+rm -f "$STATE" "$OUTROOT/skyreels_first_day_initial_v1.mp4" "$OUTROOT/skyreels_first_day_continuity_v1.mp4"
 START_TS=$(date +%s)
 
-# Stage A: T2V only. No image/reference frame is supplied.
+# Stage A: compact T2V segment. The reduced temporal window/steps are intentional
+# for the interruptible T4 benchmark; quality remains subject to human QA.
 $PY generate_video_df.py \
   --model_id "$MODEL_ID" \
   --resolution 540P \
   --ar_step 0 \
-  --base_num_frames 77 \
-  --num_frames 97 \
-  --overlap_history 17 \
+  --base_num_frames "$BASE_FRAMES" \
+  --num_frames "$NUM_FRAMES" \
+  --overlap_history "$OVERLAP" \
   --prompt "$PROMPT_A" \
   --addnoise_condition 20 \
   --guidance_scale 6.0 \
   --shift 8.0 \
-  --inference_steps 30 \
-  --fps 24 \
-  --seed 19771220 \
+  --inference_steps "$STEPS" \
+  --fps "$FPS" \
+  --seed "$SEED" \
   --offload \
   --outdir gave_first_day_initial
 
@@ -126,21 +131,47 @@ if [[ -z "${INITIAL:-}" || ! -s "$INITIAL" ]]; then
 fi
 cp "$INITIAL" "$OUTROOT/skyreels_first_day_initial_v1.mp4"
 
-# Stage B: video extension conditioned on Stage A. No image generation or I2V.
+# Persist a partial checkpoint so a preempted extension is diagnosable/recoverable.
+$PY - <<PY
+import json
+from pathlib import Path
+state = {
+  'schema': 'GAVE_SKYREELS_CONTINUITY_STATE_V1',
+  'status': 'INITIAL_GENERATED',
+  'engine': 'SkyReels-V2-DF-1.3B-540P',
+  'upstreamCommit': '$UPSTREAM_COMMIT',
+  'initialOutput': ' .gave/lightning/output/skyreels_first_day_initial_v1.mp4'.strip(),
+  'qaStatus': 'PENDING_HUMAN_REVIEW',
+  'paidInferenceUsed': False,
+  'actualSpendEur': 0,
+  'productionTouched': False,
+  'imageGenerationUsed': False,
+  'imageToVideoUsed': False,
+  'referenceImageUsed': False,
+  'frameExtractionUsed': False,
+  'videoToVideoExtensionUsed': False,
+  'benchmarkFramesPerSegment': $NUM_FRAMES,
+  'benchmarkInferenceSteps': $STEPS
+}
+Path('$STATE').write_text(json.dumps(state, indent=2), encoding='utf-8')
+print(json.dumps(state, indent=2))
+PY
+
+# Stage B: extension conditioned on Stage A. No image generation or I2V.
 $PY generate_video_df.py \
   --model_id "$MODEL_ID" \
   --resolution 540P \
   --ar_step 0 \
-  --base_num_frames 77 \
-  --num_frames 97 \
-  --overlap_history 17 \
+  --base_num_frames "$BASE_FRAMES" \
+  --num_frames "$NUM_FRAMES" \
+  --overlap_history "$OVERLAP" \
   --prompt "$PROMPT_B" \
   --addnoise_condition 20 \
   --guidance_scale 6.0 \
   --shift 8.0 \
-  --inference_steps 30 \
-  --fps 24 \
-  --seed 19771220 \
+  --inference_steps "$STEPS" \
+  --fps "$FPS" \
+  --seed "$SEED" \
   --offload \
   --video_path "$INITIAL" \
   --outdir gave_first_day_extended
@@ -186,7 +217,9 @@ state = {
   'imageToVideoUsed': False,
   'referenceImageUsed': False,
   'frameExtractionUsed': False,
-  'videoToVideoExtensionUsed': True
+  'videoToVideoExtensionUsed': True,
+  'benchmarkFramesPerSegment': $NUM_FRAMES,
+  'benchmarkInferenceSteps': $STEPS
 }
 Path('$STATE').write_text(json.dumps(state, indent=2), encoding='utf-8')
 print(json.dumps(state, indent=2))
