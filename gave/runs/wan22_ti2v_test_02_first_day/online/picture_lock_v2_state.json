@@ -1,0 +1,119 @@
+{
+  "testId": "WAN22_TI2V_TEST_02_FIRST_DAY_DIRECTED",
+  "status": "PICTURE_LOCK_V2",
+  "output": "gave/runs/wan22_ti2v_test_02_first_day/online/first_day_directed_v2_picture_lock.mp4",
+  "bytes": 4922910,
+  "durationSeconds": 30.0,
+  "targetDurationSeconds": 30.0,
+  "shotCount": 14,
+  "shots": [
+    {
+      "shotId": "V2_001_WAKE",
+      "version": 1,
+      "durationSeconds": 2.4,
+      "transitionIn": "FADE_FROM_BLACK",
+      "source": "gave/runs/wan22_ti2v_test_02_first_day/online/v2_001_wake_v1.mp4"
+    },
+    {
+      "shotId": "V2_002_JACKET",
+      "version": 1,
+      "durationSeconds": 1.8,
+      "transitionIn": "CUT_ON_BODY_MOVEMENT",
+      "source": "gave/runs/wan22_ti2v_test_02_first_day/online/v2_002_jacket_v1.mp4"
+    },
+    {
+      "shotId": "V2_003_BACKPACK_EXIT",
+      "version": 1,
+      "durationSeconds": 2.0,
+      "transitionIn": "HARD_CUT",
+      "source": "gave/runs/wan22_ti2v_test_02_first_day/online/v2_003_backpack_exit_v1.mp4"
+    },
+    {
+      "shotId": "V2_004_STREET_WALK",
+      "version": 1,
+      "durationSeconds": 2.0,
+      "transitionIn": "MATCH_DIRECTION_EXIT_TO_STREET",
+      "source": "gave/runs/wan22_ti2v_test_02_first_day/online/v2_004_street_walk_v1.mp4"
+    },
+    {
+      "shotId": "V2_005_CROSSWALK",
+      "version": 1,
+      "durationSeconds": 2.0,
+      "transitionIn": "MOTION_MATCH",
+      "source": "gave/runs/wan22_ti2v_test_02_first_day/online/v2_005_crosswalk_v1.mp4"
+    },
+    {
+      "shotId": "V2_006_SUBWAY",
+      "version": 1,
+      "durationSeconds": 3.2,
+      "transitionIn": "MOTION_CUT_TO_TRAIN",
+      "source": "gave/runs/wan22_ti2v_test_02_first_day/online/v2_006_subway_v1.mp4"
+    },
+    {
+      "shotId": "V2_007_APPROACH",
+      "version": 1,
+      "durationSeconds": 2.2,
+      "transitionIn": "HARD_CUT_ON_GAZE",
+      "source": "gave/runs/wan22_ti2v_test_02_first_day/online/v2_007_approach_v1.mp4"
+    },
+    {
+      "shotId": "V2_008_DOOR_HESITATE",
+      "version": 1,
+      "durationSeconds": 2.0,
+      "transitionIn": "CUT_ON_APPROACH",
+      "source": "gave/runs/wan22_ti2v_test_02_first_day/online/v2_008_door_hesitate_v1.mp4"
+    },
+    {
+      "shotId": "V2_009_THRESHOLD",
+      "version": 1,
+      "durationSeconds": 1.8,
+      "transitionIn": "CUT_ON_BREATH_RELEASE",
+      "source": "gave/runs/wan22_ti2v_test_02_first_day/online/v2_009_threshold_v1.mp4"
+    },
+    {
+      "shotId": "V2_010_GYM_REVEAL",
+      "version": 2,
+      "durationSeconds": 2.7,
+      "transitionIn": "REVEAL_CUT_FROM_DARK_THRESHOLD_TO_WIDE_INTERIOR",
+      "source": "gave/runs/wan22_ti2v_test_02_first_day/online/v2_010_gym_reveal_v2.mp4"
+    },
+    {
+      "shotId": "V2_011_CHANGE_PREP",
+      "version": 1,
+      "durationSeconds": 2.0,
+      "transitionIn": "HARD_CUT_TO_STAFF_CHANGING_AREA",
+      "source": "gave/runs/wan22_ti2v_test_02_first_day/online/v2_011_change_prep_v1.mp4"
+    },
+    {
+      "shotId": "V2_012_AFTER_CHANGE",
+      "version": 1,
+      "durationSeconds": 1.7,
+      "transitionIn": "ELLIPTICAL_HARD_CUT_CHANGE_HAPPENS_OFF_CAMERA",
+      "source": "gave/runs/wan22_ti2v_test_02_first_day/online/v2_012_after_change_v1.mp4"
+    },
+    {
+      "shotId": "V2_013_FLOOR_ENTRY",
+      "version": 1,
+      "durationSeconds": 2.1,
+      "transitionIn": "MATCH_CUT_ON_TURN",
+      "source": "gave/runs/wan22_ti2v_test_02_first_day/online/v2_013_floor_entry_v1.mp4"
+    },
+    {
+      "shotId": "V2_014_FINAL",
+      "version": 1,
+      "durationSeconds": 2.1,
+      "transitionIn": "CUT_ON_COLLEAGUE_NOD",
+      "source": "gave/runs/wan22_ti2v_test_02_first_day/online/v2_014_final_v1.mp4"
+    }
+  ],
+  "audioStatus": "NOT_ADDED",
+  "voiceoverStatus": "NOT_ADDED",
+  "qaStatus": "PENDING_HUMAN_REVIEW",
+  "generatedBy": "WAN2.2_TI2V_BACKEND",
+  "assembledBy": "FFMPEG_QA_AWARE_V2",
+  "paidInferenceUsed": false,
+  "actualSpendEur": 0,
+  "imageGenerationUsed": false,
+  "imageToVideoUsed": false,
+  "productionTouched": false
+}
