@@ -43,8 +43,6 @@ cd "$UPSTREAM"
 git fetch origin "$UPSTREAM_COMMIT" --depth=1
 git checkout --detach "$UPSTREAM_COMMIT"
 
-# Lightning Studios expose one managed environment and explicitly disallow venvs.
-# Install only the runtime dependencies needed by the experimental worker there.
 $PY -m pip install --upgrade pip setuptools wheel
 $PY -m pip install \
   'diffusers>=0.31.0,<0.40' \
@@ -65,14 +63,28 @@ if not torch.cuda.is_available():
 print('gpu', torch.cuda.get_device_name(0))
 PY
 
-# T4 is Turing; use fp16 instead of upstream bfloat16 to stay compatible.
+# T4/Turing compatibility: use fp16 and route Wan attention through PyTorch SDPA.
+# Upstream directly calls flash_attention() in transformer.py, which asserts when
+# FlashAttention-2 is unavailable; FA2 does not support Turing. The repository's
+# own attention() wrapper already contains an SDPA fallback, so use that instead.
 $PY - <<'PY'
 from pathlib import Path
 p = Path('generate_video_df.py')
 s = p.read_text()
 s = s.replace('weight_dtype=torch.bfloat16', 'weight_dtype=torch.float16')
 p.write_text(s)
-print('SkyReels worker dtype patch: fp16')
+
+t = Path('skyreels_v2_infer/modules/transformer.py')
+s = t.read_text()
+s = s.replace('from .attention import flash_attention', 'from .attention import attention')
+s = s.replace(
+    'flash_attention(q=q, k=k, v=v, window_size=self.window_size)',
+    'attention(q=q, k=k, v=v, window_size=self.window_size, dtype=torch.float16)'
+)
+s = s.replace('flash_attention(q, k_img, v_img)', 'attention(q, k_img, v_img, dtype=torch.float16)')
+s = s.replace('flash_attention(q, k, v)', 'attention(q, k, v, dtype=torch.float16)')
+t.write_text(s)
+print('SkyReels T4 patches: fp16 + SDPA fallback')
 PY
 
 $PY - <<'PY'
@@ -114,8 +126,7 @@ if [[ -z "${INITIAL:-}" || ! -s "$INITIAL" ]]; then
 fi
 cp "$INITIAL" "$OUTROOT/skyreels_first_day_initial_v1.mp4"
 
-# Stage B: video extension conditioned on Stage A. This preserves temporal history
-# without creating, extracting or supplying a reference image.
+# Stage B: video extension conditioned on Stage A. No image generation or I2V.
 $PY generate_video_df.py \
   --model_id "$MODEL_ID" \
   --resolution 540P \
