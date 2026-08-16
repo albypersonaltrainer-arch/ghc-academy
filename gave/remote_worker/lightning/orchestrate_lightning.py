@@ -14,6 +14,9 @@ REMOTE_REPO_ABS = "/teamspace/studios/this_studio/ghc-academy"
 REMOTE_REPO_REL = "ghc-academy"
 REMOTE_STATE_REL = f"{REMOTE_REPO_REL}/.gave/lightning/output/worker_state.json"
 REMOTE_LAST_VIDEO_REL = f"{REMOTE_REPO_REL}/.gave/lightning/output/lightning_t4_gym_reveal_001_diffusers.mp4"
+REMOTE_SKYREELS_STATE_REL = f"{REMOTE_REPO_REL}/.gave/lightning/output/skyreels_continuity_state.json"
+REMOTE_SKYREELS_INITIAL_REL = f"{REMOTE_REPO_REL}/.gave/lightning/output/skyreels_first_day_initial_v1.mp4"
+REMOTE_SKYREELS_VIDEO_REL = f"{REMOTE_REPO_REL}/.gave/lightning/output/skyreels_first_day_continuity_v1.mp4"
 REQUEST_PATH = Path("gave/control/lightning_request.json")
 LOCAL_OUT = Path("artifacts/lightning")
 
@@ -46,8 +49,6 @@ def download(studio: Studio, remote_path: str, local_path: Path) -> None:
 
 
 def recover_last(studio: Studio) -> None:
-    # Lightning SDK file transfers use paths relative to the Studio content root.
-    # Studio storage persists while sleeping; this does not require GPU compute.
     download(studio, REMOTE_LAST_VIDEO_REL, LOCAL_OUT / Path(REMOTE_LAST_VIDEO_REL).name)
     try:
         download(studio, REMOTE_STATE_REL, LOCAL_OUT / "worker_state.json")
@@ -56,12 +57,11 @@ def recover_last(studio: Studio) -> None:
     print(f"GAVE_VIDEO={LOCAL_OUT / Path(REMOTE_LAST_VIDEO_REL).name}")
 
 
-def generate_smoke(studio: Studio) -> None:
+def _run_on_t4(studio: Studio, remote_script: str) -> None:
     started = False
     try:
         studio.start(Machine.T4, interruptible=True)
         started = True
-
         remote_command = f"""
 set -euo pipefail
 cd {REMOTE_REPO_ABS}
@@ -69,36 +69,66 @@ git fetch origin {BRANCH}
 git checkout {BRANCH}
 git reset --hard origin/{BRANCH}
 export GAVE_ALLOW_PAID=false
-bash gave/remote_worker/lightning/run_gpu_smoke.sh
+bash {remote_script}
 """.strip()
         output, exit_code = studio.run_with_exit_code(remote_command)
         print(output)
         if exit_code != 0:
-            raise RuntimeError(f"Remote generation failed with exit code {exit_code}")
-
-        download(studio, REMOTE_STATE_REL, LOCAL_OUT / "worker_state.json")
-        state = json.loads((LOCAL_OUT / "worker_state.json").read_text(encoding="utf-8"))
-        if state.get("status") != "GENERATED":
-            raise RuntimeError(f"Remote worker did not finish GENERATED: {state}")
-
-        remote_output = str(state.get("output", ""))
-        if not remote_output:
-            raise RuntimeError("Remote worker state contains no output path")
-        if "/ghc-academy/" in remote_output:
-            remote_output = "ghc-academy/" + remote_output.split("/ghc-academy/", 1)[1]
-        elif remote_output.startswith("ghc-academy/"):
-            pass
-        else:
-            remote_output = f"{REMOTE_REPO_REL}/{remote_output.lstrip('/')}"
-        local_video = LOCAL_OUT / Path(remote_output).name
-        download(studio, remote_output, local_video)
-        print(f"GAVE_VIDEO={local_video}")
+            raise RuntimeError(f"Remote worker failed with exit code {exit_code}")
     finally:
         if started:
             try:
                 studio.stop()
             except Exception as exc:
                 print(f"WARNING: Lightning Studio stop failed: {exc}")
+
+
+def generate_smoke(studio: Studio) -> None:
+    _run_on_t4(studio, "gave/remote_worker/lightning/run_gpu_smoke.sh")
+
+    download(studio, REMOTE_STATE_REL, LOCAL_OUT / "worker_state.json")
+    state = json.loads((LOCAL_OUT / "worker_state.json").read_text(encoding="utf-8"))
+    if state.get("status") != "GENERATED":
+        raise RuntimeError(f"Remote worker did not finish GENERATED: {state}")
+
+    remote_output = str(state.get("output", ""))
+    if not remote_output:
+        raise RuntimeError("Remote worker state contains no output path")
+    if "/ghc-academy/" in remote_output:
+        remote_output = "ghc-academy/" + remote_output.split("/ghc-academy/", 1)[1]
+    elif not remote_output.startswith("ghc-academy/"):
+        remote_output = f"{REMOTE_REPO_REL}/{remote_output.lstrip('/')}"
+    local_video = LOCAL_OUT / Path(remote_output).name
+    download(studio, remote_output, local_video)
+    print(f"GAVE_VIDEO={local_video}")
+
+
+def skyreels_continuity(studio: Studio) -> None:
+    _run_on_t4(studio, "gave/remote_worker/lightning/run_skyreels_v2_continuity.sh")
+
+    local_state = LOCAL_OUT / "skyreels_continuity_state.json"
+    download(studio, REMOTE_SKYREELS_STATE_REL, local_state)
+    state = json.loads(local_state.read_text(encoding="utf-8"))
+
+    if state.get("status") != "GENERATED":
+        raise RuntimeError(f"SkyReels worker did not finish GENERATED: {state}")
+    for key, expected in {
+        "paidInferenceUsed": False,
+        "productionTouched": False,
+        "imageGenerationUsed": False,
+        "imageToVideoUsed": False,
+        "referenceImageUsed": False,
+        "frameExtractionUsed": False,
+        "videoToVideoExtensionUsed": True,
+    }.items():
+        if state.get(key) is not expected:
+            raise RuntimeError(f"SkyReels safety/state mismatch for {key}: {state.get(key)!r}")
+    if float(state.get("actualSpendEur", -1)) != 0:
+        raise RuntimeError("SkyReels state reports nonzero spend")
+
+    download(studio, REMOTE_SKYREELS_INITIAL_REL, LOCAL_OUT / Path(REMOTE_SKYREELS_INITIAL_REL).name)
+    download(studio, REMOTE_SKYREELS_VIDEO_REL, LOCAL_OUT / Path(REMOTE_SKYREELS_VIDEO_REL).name)
+    print(f"GAVE_VIDEO={LOCAL_OUT / Path(REMOTE_SKYREELS_VIDEO_REL).name}")
 
 
 def main() -> int:
@@ -125,6 +155,9 @@ def main() -> int:
         return 0
     if operation == "SMOKE_TEST":
         generate_smoke(studio)
+        return 0
+    if operation == "SKYREELS_CONTINUITY_TEST":
+        skyreels_continuity(studio)
         return 0
     raise RuntimeError(f"Unsupported GAVE Lightning operation: {operation}")
 
