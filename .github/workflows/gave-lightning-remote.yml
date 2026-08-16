@@ -2,12 +2,18 @@ name: GAVE Lightning Remote Generation
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - gave/wan22-t2v-test-01
+    paths:
+      - gave/control/lightning_request.json
 
 permissions:
   contents: read
 
 jobs:
   generate:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.head_commit != null }}
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     env:
@@ -23,6 +29,24 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: gave/wan22-t2v-test-01
+
+      - name: Validate GAVE request safety
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          request = json.loads(Path('gave/control/lightning_request.json').read_text())
+          assert request.get('paidInferenceAllowed') is False
+          assert float(request.get('actualSpendEur', -1)) == 0
+          assert request.get('productionAllowed') is False
+          assert request.get('imageGenerationAllowed') is False
+          assert request.get('imageToVideoAllowed') is False
+          if not request.get('enabled', False):
+              print('GAVE Lightning request is disabled; no GPU action will run.')
+              raise SystemExit(78)
+          print('GAVE Lightning request safety: PASS')
+          PY
 
       - name: Set up Python
         uses: actions/setup-python@v5
