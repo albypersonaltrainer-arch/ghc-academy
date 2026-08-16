@@ -9,17 +9,16 @@ fi
 ROOT="/teamspace/studios/this_studio/ghc-academy"
 RUNTIME="$ROOT/.gave/lightning/skyreels_v2"
 UPSTREAM="$RUNTIME/SkyReels-V2"
-VENV="$RUNTIME/venv"
 OUTROOT="$ROOT/.gave/lightning/output"
 STATE="$OUTROOT/skyreels_continuity_state.json"
-MANIFEST="$ROOT/gave/tests/skyreels_v2_continuity_first_day.json"
 UPSTREAM_COMMIT="9351d13152207cc04de780e055346b08ade0b851"
 MODEL_ID="Skywork/SkyReels-V2-DF-1.3B-540P"
+PY="python"
 
 mkdir -p "$RUNTIME" "$OUTROOT"
 cd "$ROOT"
 
-python - <<'PY'
+$PY - <<'PY'
 import json
 from pathlib import Path
 m = json.loads(Path('gave/tests/skyreels_v2_continuity_first_day.json').read_text())
@@ -35,7 +34,7 @@ print('GAVE SkyReels continuity safety: PASS')
 PY
 
 nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader
-python --version
+$PY --version
 
 if [[ ! -d "$UPSTREAM/.git" ]]; then
   git clone https://github.com/SkyworkAI/SkyReels-V2.git "$UPSTREAM"
@@ -44,16 +43,10 @@ cd "$UPSTREAM"
 git fetch origin "$UPSTREAM_COMMIT" --depth=1
 git checkout --detach "$UPSTREAM_COMMIT"
 
-if [[ ! -x "$VENV/bin/python" ]]; then
-  python -m venv --system-site-packages "$VENV"
-fi
-PY="$VENV/bin/python"
-PIP="$VENV/bin/pip"
-
-"$PY" -m pip install --upgrade pip setuptools wheel
-# Install the required runtime deliberately without flash-attn/xFuser. SkyReels
-# has a PyTorch SDPA fallback, which avoids a fragile source build on the T4.
-"$PIP" install \
+# Lightning Studios expose one managed environment and explicitly disallow venvs.
+# Install only the runtime dependencies needed by the experimental worker there.
+$PY -m pip install --upgrade pip setuptools wheel
+$PY -m pip install \
   'diffusers>=0.31.0,<0.40' \
   'transformers==4.49.0' \
   'tokenizers==0.21.1' \
@@ -62,9 +55,18 @@ PIP="$VENV/bin/pip"
   'numpy>=1.23.5,<2' \
   tqdm imageio easydict ftfy imageio-ffmpeg 'moviepy==1.0.3' huggingface_hub safetensors sentencepiece
 
-# T4 is a Turing GPU. The upstream script defaults to bfloat16; use fp16 here
-# to keep the official 1.3B Diffusion-Forcing model viable on this worker.
-"$PY" - <<'PY'
+$PY - <<'PY'
+import torch
+print('torch', torch.__version__)
+print('cuda', torch.version.cuda)
+print('cuda_available', torch.cuda.is_available())
+if not torch.cuda.is_available():
+    raise SystemExit('CUDA unavailable on SkyReels worker')
+print('gpu', torch.cuda.get_device_name(0))
+PY
+
+# T4 is Turing; use fp16 instead of upstream bfloat16 to stay compatible.
+$PY - <<'PY'
 from pathlib import Path
 p = Path('generate_video_df.py')
 s = p.read_text()
@@ -73,7 +75,7 @@ p.write_text(s)
 print('SkyReels worker dtype patch: fp16')
 PY
 
-"$PY" - <<'PY'
+$PY - <<'PY'
 import json
 from pathlib import Path
 m = json.loads(Path('/teamspace/studios/this_studio/ghc-academy/gave/tests/skyreels_v2_continuity_first_day.json').read_text())
@@ -85,11 +87,10 @@ PROMPT_B="$(cat /tmp/gave_shot_b.txt)"
 
 rm -rf result/gave_first_day_initial result/gave_first_day_extended
 mkdir -p result/gave_first_day_initial result/gave_first_day_extended
-
 START_TS=$(date +%s)
 
-# Stage A: text-to-video. No image or reference frame is supplied.
-"$PY" generate_video_df.py \
+# Stage A: T2V only. No image/reference frame is supplied.
+$PY generate_video_df.py \
   --model_id "$MODEL_ID" \
   --resolution 540P \
   --ar_step 0 \
@@ -113,9 +114,9 @@ if [[ -z "${INITIAL:-}" || ! -s "$INITIAL" ]]; then
 fi
 cp "$INITIAL" "$OUTROOT/skyreels_first_day_initial_v1.mp4"
 
-# Stage B: extend the actual generated video. This is the continuity mechanism:
-# the previous frames are the temporal condition. No image generation, no I2V.
-"$PY" generate_video_df.py \
+# Stage B: video extension conditioned on Stage A. This preserves temporal history
+# without creating, extracting or supplying a reference image.
+$PY generate_video_df.py \
   --model_id "$MODEL_ID" \
   --resolution 540P \
   --ar_step 0 \
@@ -141,8 +142,8 @@ fi
 cp "$EXTENDED" "$OUTROOT/skyreels_first_day_continuity_v1.mp4"
 
 END_TS=$(date +%s)
-"$PY" - <<PY
-import json, os, subprocess
+$PY - <<PY
+import json, subprocess
 from pathlib import Path
 out = Path('$OUTROOT')
 video = out / 'skyreels_first_day_continuity_v1.mp4'
