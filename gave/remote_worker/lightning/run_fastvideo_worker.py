@@ -107,6 +107,7 @@ def main() -> int:
         "shotId": shot["shotId"],
         "status": "STARTING",
         "gpu": gpu,
+        "runtimePrecision": "fp16",
         "paidInferenceUsed": False,
         "actualSpendEur": 0,
         "imageGenerationUsed": False,
@@ -117,6 +118,7 @@ def main() -> int:
 
     os.environ.setdefault("FASTVIDEO_ATTENTION_BACKEND", backend.get("attentionBackend", "TORCH_SDPA"))
     os.environ.setdefault("FASTVIDEO_TARGET_DEVICE", "cuda")
+    os.environ.setdefault("FASTVIDEO_WORKER_MULTIPROC_METHOD", "spawn")
 
     try:
         import torch
@@ -128,13 +130,28 @@ def main() -> int:
         state["status"] = "LOADING_MODEL"
         save_json(state_path, state)
 
+        # T4 is a pre-Ampere GPU. FastWan's FastVideo preset defaults to bf16,
+        # so explicitly use fp16 for GPU-side DiT/VAE decode on this worker.
+        # Keep the text encoder in fp32/CPU and use dense SDPA to avoid custom
+        # sparse-attention kernels during the portability smoke test.
         generator = VideoGenerator.from_pretrained(
             backend["model"],
             num_gpus=1,
             dit_cpu_offload=True,
+            dit_layerwise_offload=True,
             text_encoder_cpu_offload=True,
             vae_cpu_offload=True,
+            pin_cpu_memory=True,
             use_fsdp_inference=False,
+            dit_precision="fp16",
+            vae_precision="fp32",
+            vae_decode_precision="fp16",
+            text_encoder_precisions=("fp32",),
+            vae_tiling=True,
+            vae_sp=False,
+            flow_shift=8.0,
+            dmd_denoising_steps=[1000, 757, 522],
+            VSA_sparsity=0.0,
         )
 
         state["status"] = "GENERATING"
