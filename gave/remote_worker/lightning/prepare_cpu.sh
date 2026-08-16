@@ -23,13 +23,26 @@ fi
 source "$VENV/bin/activate"
 uv pip install --upgrade fastvideo huggingface_hub
 
+# IMPORTANT: do not import fastvideo on a CPU-only Studio. FastVideo imports
+# Triton/CUDA runtime components at module import time and can fail with
+# "0 active drivers" even when the package is installed correctly. We verify
+# installation metadata only; the real import/CUDA test happens after switching
+# to the free-credit GPU in run_gpu_smoke.sh.
 python - <<'PY'
-import json, sys
-import fastvideo
+import json
+import sys
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    fastvideo_version = version("fastvideo")
+except PackageNotFoundError as exc:
+    raise SystemExit("FastVideo package was not installed") from exc
+
 payload = {
     "status": "CPU_PREPARED",
     "python": sys.version.split()[0],
-    "fastvideo": getattr(fastvideo, "__version__", "unknown"),
+    "fastvideo": fastvideo_version,
+    "cudaImportDeferredUntilGpu": True,
     "paidInferenceUsed": False,
     "actualSpendEur": 0,
     "imageGenerationUsed": False,
