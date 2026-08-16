@@ -1,5 +1,5 @@
 {
-  "runLabel": "FIRST_DAY_DIRECTED_V2_EXACT_30S_ASSEMBLY_20260816_1638",
+  "runLabel": "FIRST_DAY_DIRECTED_V2_EXACT_30S_ASSEMBLY_20260816_1641",
   "startShot": 1,
   "maxShots": 14,
   "width": 768,
@@ -10,5 +10,5 @@
   "allowPaidFallback": false,
   "allowImageInput": false,
   "touchProduction": false,
-  "notes": "Assembly-only retry after exact-frame timing fix. Preserve all 14 valid clips; V2_010_GYM_REVEAL v1 remains rejected and v2 is required. Wan T2V only, input_image=None, no image generation, no I2V, no paid inference, actualSpendEur=0, Production untouched."
+  "notes": "Assembly-only retry after timestamp padding fix. Preserve all 14 valid clips; V2_010_GYM_REVEAL v1 remains rejected and v2 is required. Wan T2V only, input_image=None, no image generation, no I2V, no paid inference, actualSpendEur=0, Production untouched."
 }
