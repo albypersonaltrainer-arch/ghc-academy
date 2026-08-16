@@ -6,13 +6,14 @@ from pathlib import Path
 
 from lightning_sdk import Machine, Studio
 
-
 BRANCH = "gave/wan22-t2v-test-01"
 DEFAULT_ORG = "GAVE"
 DEFAULT_TEAMSPACE = "deploy-model-project"
 DEFAULT_STUDIO = "deploy-model-devbox"
-REMOTE_REPO = "ghc-academy"
-REMOTE_STATE = f"{REMOTE_REPO}/.gave/lightning/output/worker_state.json"
+REMOTE_REPO_ABS = "/teamspace/studios/this_studio/ghc-academy"
+REMOTE_STATE_ABS = f"{REMOTE_REPO_ABS}/.gave/lightning/output/worker_state.json"
+REMOTE_LAST_VIDEO_ABS = f"{REMOTE_REPO_ABS}/.gave/lightning/output/lightning_t4_gym_reveal_001_diffusers.mp4"
+REQUEST_PATH = Path("gave/control/lightning_request.json")
 LOCAL_OUT = Path("artifacts/lightning")
 
 
@@ -23,32 +24,47 @@ def required_env(name: str) -> str:
     return value
 
 
-def main() -> int:
-    # Authentication is intentionally injected by CI secrets only.
-    required_env("LIGHTNING_USER_ID")
-    required_env("LIGHTNING_API_KEY")
+def load_request() -> dict:
+    request = json.loads(REQUEST_PATH.read_text(encoding="utf-8"))
+    if request.get("paidInferenceAllowed") is not False:
+        raise RuntimeError("paidInferenceAllowed must remain false")
+    if float(request.get("actualSpendEur", -1)) != 0:
+        raise RuntimeError("actualSpendEur must remain 0")
+    if request.get("productionAllowed") is not False:
+        raise RuntimeError("productionAllowed must remain false")
+    if request.get("imageGenerationAllowed") is not False:
+        raise RuntimeError("imageGenerationAllowed must remain false")
+    if request.get("imageToVideoAllowed") is not False:
+        raise RuntimeError("imageToVideoAllowed must remain false")
+    return request
 
-    if os.environ.get("GAVE_ALLOW_PAID", "false").lower() not in {"false", "0", "no"}:
-        raise RuntimeError("GAVE_ALLOW_PAID must remain false")
 
-    org = os.environ.get("LIGHTNING_ORG", DEFAULT_ORG)
-    teamspace = os.environ.get("LIGHTNING_TEAMSPACE", DEFAULT_TEAMSPACE)
-    studio_name = os.environ.get("LIGHTNING_STUDIO", DEFAULT_STUDIO)
+def download(studio: Studio, remote_path: str, local_path: Path) -> None:
+    local_path.parent.mkdir(parents=True, exist_ok=True)
+    studio.download_file(remote_path, str(local_path))
 
-    LOCAL_OUT.mkdir(parents=True, exist_ok=True)
 
-    studio = Studio(name=studio_name, teamspace=teamspace, org=org)
+def recover_last(studio: Studio) -> None:
+    # Studio files persist while sleeping. Recovery does not require GPU compute.
+    download(studio, REMOTE_LAST_VIDEO_ABS, LOCAL_OUT / Path(REMOTE_LAST_VIDEO_ABS).name)
+    try:
+        download(studio, REMOTE_STATE_ABS, LOCAL_OUT / "worker_state.json")
+    except Exception as exc:
+        print(f"WARNING: state recovery failed but video recovery succeeded: {exc}")
+    print(f"GAVE_VIDEO={LOCAL_OUT / Path(REMOTE_LAST_VIDEO_ABS).name}")
+
+
+def generate_smoke(studio: Studio) -> None:
     started = False
     try:
-        # Interruptible T4 only. With the user's account having no payment method,
-        # the run can consume free credits or fail when credits are unavailable,
-        # but it must not create real-money inference spend.
+        # Interruptible T4 only. Account-level billing safeguards remain external;
+        # GAVE itself never enables paid inference or a paid-provider fallback.
         studio.start(Machine.T4, interruptible=True)
         started = True
 
         remote_command = f"""
 set -euo pipefail
-cd {REMOTE_REPO}
+cd {REMOTE_REPO_ABS}
 git fetch origin {BRANCH}
 git checkout {BRANCH}
 git reset --hard origin/{BRANCH}
@@ -60,31 +76,52 @@ bash gave/remote_worker/lightning/run_gpu_smoke.sh
         if exit_code != 0:
             raise RuntimeError(f"Remote generation failed with exit code {exit_code}")
 
-        studio.download_file(REMOTE_STATE, str(LOCAL_OUT / "worker_state.json"), progress_bar=False)
+        download(studio, REMOTE_STATE_ABS, LOCAL_OUT / "worker_state.json")
         state = json.loads((LOCAL_OUT / "worker_state.json").read_text(encoding="utf-8"))
         if state.get("status") != "GENERATED":
             raise RuntimeError(f"Remote worker did not finish GENERATED: {state}")
 
         remote_output = str(state.get("output", ""))
-        marker = "/ghc-academy/"
-        if marker in remote_output:
-            remote_output = "ghc-academy/" + remote_output.split(marker, 1)[1]
-        elif remote_output.startswith("ghc-academy/"):
-            pass
-        else:
-            raise RuntimeError(f"Unexpected remote output path: {remote_output}")
-
+        if not remote_output:
+            raise RuntimeError("Remote worker state contains no output path")
+        if not remote_output.startswith("/"):
+            remote_output = f"{REMOTE_REPO_ABS}/{remote_output.lstrip('/')}"
         local_video = LOCAL_OUT / Path(remote_output).name
-        studio.download_file(remote_output, str(local_video), progress_bar=False)
+        download(studio, remote_output, local_video)
         print(f"GAVE_VIDEO={local_video}")
-        return 0
     finally:
         if started:
-            # Always stop compute, including failures.
             try:
                 studio.stop()
             except Exception as exc:
                 print(f"WARNING: Lightning Studio stop failed: {exc}")
+
+
+def main() -> int:
+    required_env("LIGHTNING_USER_ID")
+    required_env("LIGHTNING_API_KEY")
+    if os.environ.get("GAVE_ALLOW_PAID", "false").lower() not in {"false", "0", "no"}:
+        raise RuntimeError("GAVE_ALLOW_PAID must remain false")
+
+    request = load_request()
+    if not request.get("enabled", False):
+        print("GAVE Lightning request disabled; nothing to do.")
+        return 0
+
+    org = os.environ.get("LIGHTNING_ORG", DEFAULT_ORG)
+    teamspace = os.environ.get("LIGHTNING_TEAMSPACE", DEFAULT_TEAMSPACE)
+    studio_name = os.environ.get("LIGHTNING_STUDIO", DEFAULT_STUDIO)
+    studio = Studio(name=studio_name, teamspace=teamspace, org=org)
+    LOCAL_OUT.mkdir(parents=True, exist_ok=True)
+
+    operation = str(request.get("operation", "")).upper()
+    if operation == "RECOVER_LAST":
+        recover_last(studio)
+        return 0
+    if operation == "SMOKE_TEST":
+        generate_smoke(studio)
+        return 0
+    raise RuntimeError(f"Unsupported GAVE Lightning operation: {operation}")
 
 
 if __name__ == "__main__":
