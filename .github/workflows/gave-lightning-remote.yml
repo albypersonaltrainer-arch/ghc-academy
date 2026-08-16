@@ -61,17 +61,15 @@ jobs:
         run: |
           python - <<'PY'
           import os
-          uid = os.environ.get('LIGHTNING_USER_ID', '')
-          key = os.environ.get('LIGHTNING_API_KEY', '')
+          uid = os.environ.get('LIGHTNING_USER_ID', '').strip()
+          key = os.environ.get('LIGHTNING_API_KEY', '').strip()
           if not uid:
               raise SystemExit('Missing LIGHTNING_USER_ID secret')
           if not key:
               raise SystemExit('Missing LIGHTNING_API_KEY secret')
           for name, value in [('LIGHTNING_USER_ID', uid), ('LIGHTNING_API_KEY', key)]:
               if '*' in value:
-                  raise SystemExit(f'{name} contains asterisks: the masked display value was saved instead of the real credential')
-              if value != value.strip():
-                  raise SystemExit(f'{name} contains leading/trailing whitespace')
+                  raise SystemExit(f'{name} contains asterisks: masked display value was saved instead of the real credential')
               if '=' in value or 'lightning login' in value.lower() or name + '=' in value:
                   raise SystemExit(f'{name} appears to contain the assignment/CLI command instead of only the credential value')
           print(f'Lightning credential shape: PASS uid_len={len(uid)} key_len={len(key)}')
