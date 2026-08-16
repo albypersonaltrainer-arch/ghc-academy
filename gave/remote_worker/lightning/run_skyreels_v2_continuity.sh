@@ -53,7 +53,7 @@ $PY -m pip install \
   'accelerate==1.6.0' \
   'opencv-python==4.10.0.84' \
   'numpy>=1.23.5,<2' \
-  tqdm imageio easydict ftfy imageio-ffmpeg 'moviepy==1.0.3' huggingface_hub safetensors sentencepiece decord
+  tqdm imageio easydict ftfy imageio-ffmpeg 'moviepy==1.0.3' huggingface_hub safetensors sentencepiece decord einops
 
 $PY - <<'PY'
 import torch
