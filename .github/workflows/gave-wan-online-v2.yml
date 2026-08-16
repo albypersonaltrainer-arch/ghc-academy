@@ -87,10 +87,10 @@ jobs:
           git add gave/runs/wan22_ti2v_test_02_first_day/online 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "No V2 assets/state to persist."
-            exit 0
+          else
+            git commit -m 'test(gave): persist QA-aware directed V2 Wan output'
+            git push origin HEAD:gave/wan22-t2v-test-01
           fi
-          git commit -m 'test(gave): persist QA-aware directed V2 Wan output'
-          git push origin HEAD:gave/wan22-t2v-test-01
 
       - name: Enforce zero-cost T2V state
         if: always()
@@ -109,3 +109,77 @@ jobs:
           assert d['productionTouched'] is False
           print('GAVE DIRECTED V2 ZERO-COST/T2V SAFETY: PASS')
           PY
+
+      - name: Check V2 assembly readiness
+        id: ready
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          m = json.loads(Path('gave/tests/wan22_ti2v_test_02_first_day_directed.json').read_text())
+          o = json.loads(Path('gave/tests/v2_prompt_overrides.json').read_text())
+          r = json.loads(Path('gave/qa/v2_manual_review.json').read_text())
+          out = Path('gave/runs/wan22_ti2v_test_02_first_day/online')
+          rejected = {(x['shotId'], int(x.get('generatedVersion', 1))) for x in r.get('manualReview', []) if x.get('status') == 'REJECTED' or x.get('reuseAllowed') is False}
+          missing = []
+          for shot in m['shots']:
+              sid = shot['id']
+              version = int(o.get('overrides', {}).get(sid, {}).get('nextVersion', 1))
+              if (sid, version) in rejected:
+                  missing.append(f'{sid}_v{version}:REJECTED')
+                  continue
+              p = out / f'{sid.lower()}_v{version}.mp4'
+              if not p.exists(): missing.append(str(p))
+          ready = not missing
+          print('READY', ready, 'MISSING', missing)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as fh: fh.write(f'ready={str(ready).lower()}\n')
+          PY
+
+      - name: Install FFmpeg for ready V2
+        if: steps.ready.outputs.ready == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Assemble QA-aware 30s V2 picture lock
+        if: steps.ready.outputs.ready == 'true'
+        run: python -u gave/finalize_first_day_v2.py
+
+      - name: Enforce V2 assembly safety
+        if: steps.ready.outputs.ready == 'true'
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d = json.loads(Path('gave/runs/wan22_ti2v_test_02_first_day/online/picture_lock_v2_state.json').read_text())
+          assert d['status'] == 'PICTURE_LOCK_V2'
+          assert d['shotCount'] == 14
+          assert abs(float(d['durationSeconds']) - 30.0) < 0.25
+          assert d['paidInferenceUsed'] is False
+          assert d['actualSpendEur'] == 0
+          assert d['imageGenerationUsed'] is False
+          assert d['imageToVideoUsed'] is False
+          assert d['productionTouched'] is False
+          assert Path(d['output']).exists()
+          print('GAVE DIRECTED V2 ASSEMBLY SAFETY: PASS')
+          PY
+
+      - name: Upload Directed V2 MP4 artifact
+        if: steps.ready.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: gave-first-day-directed-v2-picture-lock
+          path: gave/runs/wan22_ti2v_test_02_first_day/online/first_day_directed_v2_picture_lock.mp4
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Persist V2 picture lock on experimental branch
+        if: steps.ready.outputs.ready == 'true'
+        run: |
+          rm -rf gave/runs/wan22_ti2v_test_02_first_day/online/_assembly_v2
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add gave/runs/wan22_ti2v_test_02_first_day/online/first_day_directed_v2_picture_lock.mp4
+          git add gave/runs/wan22_ti2v_test_02_first_day/online/picture_lock_v2_state.json
+          git commit -m 'test(gave): persist Directed V2 30s picture lock' || exit 0
+          git push origin HEAD:gave/wan22-t2v-test-01
