@@ -9,7 +9,11 @@ on:
       - gave/control/lightning_request.json
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: gave-lightning-remote
+  cancel-in-progress: false
 
 jobs:
   generate:
@@ -31,10 +35,11 @@ jobs:
           ref: gave/wan22-t2v-test-01
 
       - name: Validate GAVE request safety
+        id: safety
         shell: bash
         run: |
           python - <<'PY'
-          import json
+          import json, os
           from pathlib import Path
           request = json.loads(Path('gave/control/lightning_request.json').read_text())
           assert request.get('paidInferenceAllowed') is False
@@ -42,21 +47,26 @@ jobs:
           assert request.get('productionAllowed') is False
           assert request.get('imageGenerationAllowed') is False
           assert request.get('imageToVideoAllowed') is False
-          if not request.get('enabled', False):
-              print('GAVE Lightning request is disabled; no GPU action will run.')
-              raise SystemExit(78)
+          enabled = bool(request.get('enabled', False))
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as fh:
+              fh.write(f"enabled={'true' if enabled else 'false'}\n")
           print('GAVE Lightning request safety: PASS')
+          if not enabled:
+              print('GAVE Lightning request disabled; clean no-op.')
           PY
 
       - name: Set up Python
+        if: steps.safety.outputs.enabled == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install Lightning SDK
+        if: steps.safety.outputs.enabled == 'true'
         run: python -m pip install --upgrade lightning-sdk
 
       - name: Validate Lightning credentials
+        if: steps.safety.outputs.enabled == 'true'
         shell: bash
         run: |
           python - <<'PY'
@@ -76,13 +86,88 @@ jobs:
           PY
 
       - name: Generate remotely and recover MP4
+        id: generate
+        if: steps.safety.outputs.enabled == 'true'
+        continue-on-error: true
         run: python gave/remote_worker/lightning/orchestrate_lightning.py
 
+      - name: Write observable GAVE status
+        if: always() && steps.safety.outputs.enabled == 'true'
+        shell: bash
+        env:
+          GENERATE_OUTCOME: ${{ steps.generate.outcome }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          request = json.loads(Path('gave/control/lightning_request.json').read_text())
+          payload = {
+              'schema': 'GAVE_REMOTE_OBSERVABILITY_V1',
+              'requestId': request.get('requestId'),
+              'operation': request.get('operation'),
+              'backend': request.get('backend'),
+              'workflowOutcome': os.environ.get('GENERATE_OUTCOME', 'unknown'),
+              'headSha': os.environ.get('GITHUB_SHA'),
+              'updatedAtUtc': datetime.now(timezone.utc).isoformat(),
+              'paidInferenceAllowed': False,
+              'actualSpendEur': 0,
+              'productionAllowed': False,
+              'imageGenerationAllowed': False,
+              'imageToVideoAllowed': False,
+          }
+
+          candidates = [
+              Path('artifacts/lightning/skyreels_continuity_state.json'),
+              Path('artifacts/lightning/worker_state.json'),
+          ]
+          for candidate in candidates:
+              if candidate.exists():
+                  try:
+                      state = json.loads(candidate.read_text())
+                      payload['remoteStateFile'] = str(candidate)
+                      payload['remoteStatus'] = state.get('status')
+                      payload['qaStatus'] = state.get('qaStatus') or state.get('reviewStatus')
+                      payload['output'] = state.get('output')
+                      payload['paidInferenceUsed'] = state.get('paidInferenceUsed', False)
+                      payload['reportedSpendEur'] = state.get('actualSpendEur', 0)
+                      payload['productionTouched'] = state.get('productionTouched', False)
+                      payload['imageGenerationUsed'] = state.get('imageGenerationUsed', False)
+                      payload['imageToVideoUsed'] = state.get('imageToVideoUsed', False)
+                  except Exception as exc:
+                      payload['stateParseError'] = str(exc)
+                  break
+
+          out = Path('gave/status/lightning_last_run.json')
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(payload, indent=2))
+          PY
+
+      - name: Commit observable status to experimental branch
+        if: always() && steps.safety.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          git config user.name "gave-remote-bot"
+          git config user.email "gave-remote-bot@users.noreply.github.com"
+          git add gave/status/lightning_last_run.json
+          if git diff --cached --quiet; then
+            echo "No observable status change to commit."
+          else
+            git commit -m "gave: record remote run status"
+            git push origin HEAD:gave/wan22-t2v-test-01
+          fi
+
       - name: Upload GAVE result
-        if: always()
+        if: always() && steps.safety.outputs.enabled == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: gave-lightning-video
           path: artifacts/lightning/
           if-no-files-found: warn
           retention-days: 7
+
+      - name: Fail workflow if generation failed
+        if: steps.safety.outputs.enabled == 'true' && steps.generate.outcome != 'success'
+        run: exit 1
