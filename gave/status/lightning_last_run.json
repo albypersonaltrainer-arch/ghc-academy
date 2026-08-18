@@ -1,0 +1,14 @@
+{
+  "schema": "GAVE_REMOTE_OBSERVABILITY_V1",
+  "requestId": "skyreels-continuity-0010",
+  "operation": "SKYREELS_CONTINUITY_TEST",
+  "backend": "SKYREELS_V2_DF_1_3B_540P",
+  "workflowOutcome": "cancelled",
+  "headSha": "f609a7fe4f1cdbddd08ddcbb7226a07ab2f73d85",
+  "updatedAtUtc": "2026-08-18T19:00:48.767027+00:00",
+  "paidInferenceAllowed": false,
+  "actualSpendEur": 0,
+  "productionAllowed": false,
+  "imageGenerationAllowed": false,
+  "imageToVideoAllowed": false
+}
