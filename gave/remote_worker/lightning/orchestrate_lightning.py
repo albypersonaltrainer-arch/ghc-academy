@@ -57,11 +57,14 @@ def recover_last(studio: Studio) -> None:
     print(f"GAVE_VIDEO={LOCAL_OUT / Path(REMOTE_LAST_VIDEO_REL).name}")
 
 
-def _run_on_t4(studio: Studio, remote_script: str) -> None:
+def _run_on_t4(studio: Studio, remote_script: str, *, skyreels_stage: str | None = None) -> None:
     started = False
     try:
         studio.start(Machine.T4, interruptible=True)
         started = True
+        stage_export = ""
+        if skyreels_stage:
+            stage_export = f"export GAVE_SKYREELS_STAGE={skyreels_stage}\n"
         remote_command = f"""
 set -euo pipefail
 cd {REMOTE_REPO_ABS}
@@ -69,7 +72,7 @@ git fetch origin {BRANCH}
 git checkout {BRANCH}
 git reset --hard origin/{BRANCH}
 export GAVE_ALLOW_PAID=false
-bash {remote_script}
+{stage_export}bash {remote_script}
 """.strip()
         output, exit_code = studio.run_with_exit_code(remote_command)
         print(output)
@@ -103,14 +106,10 @@ def generate_smoke(studio: Studio) -> None:
     print(f"GAVE_VIDEO={local_video}")
 
 
-def recover_skyreels(studio: Studio) -> None:
-    """Recover persisted SkyReels outputs without starting any GPU."""
+def _load_skyreels_state(studio: Studio) -> dict:
     local_state = LOCAL_OUT / "skyreels_continuity_state.json"
     download(studio, REMOTE_SKYREELS_STATE_REL, local_state)
     state = json.loads(local_state.read_text(encoding="utf-8"))
-
-    if state.get("status") != "GENERATED":
-        raise RuntimeError(f"SkyReels worker did not finish GENERATED: {state}")
     for key, expected in {
         "paidInferenceUsed": False,
         "productionTouched": False,
@@ -118,34 +117,91 @@ def recover_skyreels(studio: Studio) -> None:
         "imageToVideoUsed": False,
         "referenceImageUsed": False,
         "frameExtractionUsed": False,
-        "videoToVideoExtensionUsed": True,
     }.items():
         if state.get(key) is not expected:
             raise RuntimeError(f"SkyReels safety/state mismatch for {key}: {state.get(key)!r}")
     if float(state.get("actualSpendEur", -1)) != 0:
         raise RuntimeError("SkyReels state reports nonzero spend")
+    return state
 
+
+def recover_skyreels_initial(studio: Studio) -> None:
+    state = _load_skyreels_state(studio)
+    if state.get("status") not in {"INITIAL_GENERATED", "GENERATED"}:
+        raise RuntimeError(f"SkyReels initial segment not ready: {state}")
+    download(studio, REMOTE_SKYREELS_INITIAL_REL, LOCAL_OUT / Path(REMOTE_SKYREELS_INITIAL_REL).name)
+    print(f"GAVE_VIDEO={LOCAL_OUT / Path(REMOTE_SKYREELS_INITIAL_REL).name}")
+
+
+def recover_skyreels(studio: Studio) -> None:
+    state = _load_skyreels_state(studio)
+    if state.get("status") != "GENERATED":
+        raise RuntimeError(f"SkyReels worker did not finish GENERATED: {state}")
+    if state.get("videoToVideoExtensionUsed") is not True:
+        raise RuntimeError("SkyReels final state does not report video extension")
     download(studio, REMOTE_SKYREELS_INITIAL_REL, LOCAL_OUT / Path(REMOTE_SKYREELS_INITIAL_REL).name)
     download(studio, REMOTE_SKYREELS_VIDEO_REL, LOCAL_OUT / Path(REMOTE_SKYREELS_VIDEO_REL).name)
     print(f"GAVE_VIDEO={LOCAL_OUT / Path(REMOTE_SKYREELS_VIDEO_REL).name}")
 
 
-def skyreels_continuity(studio: Studio) -> None:
+def skyreels_initial(studio: Studio) -> None:
     try:
-        _run_on_t4(studio, "gave/remote_worker/lightning/run_skyreels_v2_continuity.sh")
+        _run_on_t4(
+            studio,
+            "gave/remote_worker/lightning/run_skyreels_v2_continuity.sh",
+            skyreels_stage="INITIAL",
+        )
     except Exception as exc:
-        # Interruptible Lightning workers can disappear while the SDK is polling.
-        # Studio storage persists, so first try to recover a completed result before
-        # treating the transport/preemption error as a failed generation.
-        print(f"WARNING: SkyReels remote command ended abnormally: {exc}")
+        print(f"WARNING: SkyReels INITIAL command ended abnormally: {exc}")
         try:
-            recover_skyreels(studio)
-            print("SkyReels persisted result recovered after remote command interruption.")
+            recover_skyreels_initial(studio)
+            print("SkyReels persisted INITIAL recovered after interruption.")
             return
         except Exception as recovery_exc:
-            print(f"SkyReels recovery after interruption did not find a complete result: {recovery_exc}")
+            print(f"SkyReels INITIAL recovery failed: {recovery_exc}")
             raise
+    recover_skyreels_initial(studio)
 
+
+def skyreels_extend(studio: Studio) -> None:
+    # Fail before starting a GPU if the persistent initial segment is absent.
+    recover_skyreels_initial(studio)
+    try:
+        _run_on_t4(
+            studio,
+            "gave/remote_worker/lightning/run_skyreels_v2_continuity.sh",
+            skyreels_stage="EXTEND",
+        )
+    except Exception as exc:
+        print(f"WARNING: SkyReels EXTEND command ended abnormally: {exc}")
+        try:
+            recover_skyreels(studio)
+            print("SkyReels persisted EXTEND result recovered after interruption.")
+            return
+        except Exception as recovery_exc:
+            print(f"SkyReels EXTEND recovery failed: {recovery_exc}")
+            raise
+    recover_skyreels(studio)
+
+
+def skyreels_continuity(studio: Studio) -> None:
+    # Compatibility path. Prefer staged INITIAL then EXTEND operations so each GPU
+    # job remains below the GitHub workflow timeout and persists its checkpoint.
+    try:
+        _run_on_t4(
+            studio,
+            "gave/remote_worker/lightning/run_skyreels_v2_continuity.sh",
+            skyreels_stage="FULL",
+        )
+    except Exception as exc:
+        print(f"WARNING: SkyReels FULL command ended abnormally: {exc}")
+        try:
+            recover_skyreels(studio)
+            print("SkyReels persisted result recovered after interruption.")
+            return
+        except Exception as recovery_exc:
+            print(f"SkyReels FULL recovery failed: {recovery_exc}")
+            raise
     recover_skyreels(studio)
 
 
@@ -176,6 +232,12 @@ def main() -> int:
         return 0
     if operation == "SKYREELS_RECOVER":
         recover_skyreels(studio)
+        return 0
+    if operation == "SKYREELS_INITIAL_TEST":
+        skyreels_initial(studio)
+        return 0
+    if operation == "SKYREELS_EXTENSION_TEST":
+        skyreels_extend(studio)
         return 0
     if operation == "SKYREELS_CONTINUITY_TEST":
         skyreels_continuity(studio)
