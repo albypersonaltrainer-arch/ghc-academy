@@ -20,7 +20,14 @@ OVERLAP=17
 STEPS=16
 FPS=24
 SEED=19771220
+STAGE="${GAVE_SKYREELS_STAGE:-FULL}"
 
+case "$STAGE" in
+  INITIAL|EXTEND|FULL) ;;
+  *) echo "Unsupported GAVE_SKYREELS_STAGE=$STAGE" >&2; exit 69 ;;
+esac
+
+echo "GAVE SkyReels stage: $STAGE"
 mkdir -p "$RUNTIME" "$OUTROOT"
 cd "$ROOT"
 
@@ -69,7 +76,7 @@ if not torch.cuda.is_available():
 print('gpu', torch.cuda.get_device_name(0))
 PY
 
-# T4/Turing compatibility: use fp16 and route Wan attention through PyTorch SDPA.
+# T4/Turing compatibility: fp16 + PyTorch SDPA fallback. Patches are idempotent.
 $PY - <<'PY'
 from pathlib import Path
 p = Path('generate_video_df.py')
@@ -99,48 +106,65 @@ Path('/tmp/gave_shot_b.txt').write_text(m['shotBExtension']['prompt'])
 PY
 PROMPT_A="$(cat /tmp/gave_shot_a.txt)"
 PROMPT_B="$(cat /tmp/gave_shot_b.txt)"
-
-rm -rf result/gave_first_day_initial result/gave_first_day_extended
-mkdir -p result/gave_first_day_initial result/gave_first_day_extended
-rm -f "$STATE" "$OUTROOT/skyreels_first_day_initial_v1.mp4" "$OUTROOT/skyreels_first_day_continuity_v1.mp4"
+INITIAL_PERSIST="$OUTROOT/skyreels_first_day_initial_v1.mp4"
+CONTINUITY_PERSIST="$OUTROOT/skyreels_first_day_continuity_v1.mp4"
 START_TS=$(date +%s)
 
-# Stage A: compact T2V segment. The reduced temporal window/steps are intentional
-# for the interruptible T4 benchmark; quality remains subject to human QA.
-$PY generate_video_df.py \
-  --model_id "$MODEL_ID" \
-  --resolution 540P \
-  --ar_step 0 \
-  --base_num_frames "$BASE_FRAMES" \
-  --num_frames "$NUM_FRAMES" \
-  --overlap_history "$OVERLAP" \
-  --prompt "$PROMPT_A" \
-  --addnoise_condition 20 \
-  --guidance_scale 6.0 \
-  --shift 8.0 \
-  --inference_steps "$STEPS" \
-  --fps "$FPS" \
-  --seed "$SEED" \
-  --offload \
-  --outdir gave_first_day_initial
+if [[ "$STAGE" == "INITIAL" || "$STAGE" == "FULL" ]]; then
+  rm -rf result/gave_first_day_initial
+  mkdir -p result/gave_first_day_initial
+  rm -f "$STATE" "$INITIAL_PERSIST"
+  if [[ "$STAGE" == "FULL" ]]; then
+    rm -f "$CONTINUITY_PERSIST"
+  fi
 
-INITIAL=$(find result/gave_first_day_initial -type f -name '*.mp4' -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)
-if [[ -z "${INITIAL:-}" || ! -s "$INITIAL" ]]; then
-  echo "SkyReels initial segment missing" >&2
-  exit 71
-fi
-cp "$INITIAL" "$OUTROOT/skyreels_first_day_initial_v1.mp4"
+  # Stage A: pure text-to-video. No image or reference frame is supplied.
+  $PY generate_video_df.py \
+    --model_id "$MODEL_ID" \
+    --resolution 540P \
+    --ar_step 0 \
+    --base_num_frames "$BASE_FRAMES" \
+    --num_frames "$NUM_FRAMES" \
+    --overlap_history "$OVERLAP" \
+    --prompt "$PROMPT_A" \
+    --addnoise_condition 20 \
+    --guidance_scale 6.0 \
+    --shift 8.0 \
+    --inference_steps "$STEPS" \
+    --fps "$FPS" \
+    --seed "$SEED" \
+    --offload \
+    --outdir gave_first_day_initial
 
-# Persist a partial checkpoint so a preempted extension is diagnosable/recoverable.
-$PY - <<PY
-import json
+  INITIAL=$(find result/gave_first_day_initial -type f -name '*.mp4' -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)
+  if [[ -z "${INITIAL:-}" || ! -s "$INITIAL" ]]; then
+    echo "SkyReels initial segment missing" >&2
+    exit 71
+  fi
+  cp "$INITIAL" "$INITIAL_PERSIST"
+
+  END_INITIAL_TS=$(date +%s)
+  $PY - <<PY
+import json, subprocess
 from pathlib import Path
+initial = Path('$INITIAL_PERSIST')
+
+def probe(path):
+    cmd = ['ffprobe','-v','error','-show_entries','format=duration,size','-show_entries','stream=width,height,r_frame_rate,codec_name','-of','json',str(path)]
+    try:
+        return json.loads(subprocess.check_output(cmd, text=True))
+    except Exception as exc:
+        return {'probeError': str(exc)}
+
 state = {
   'schema': 'GAVE_SKYREELS_CONTINUITY_STATE_V1',
   'status': 'INITIAL_GENERATED',
+  'stage': 'INITIAL',
   'engine': 'SkyReels-V2-DF-1.3B-540P',
   'upstreamCommit': '$UPSTREAM_COMMIT',
-  'initialOutput': ' .gave/lightning/output/skyreels_first_day_initial_v1.mp4'.strip(),
+  'initialOutput': '.gave/lightning/output/skyreels_first_day_initial_v1.mp4',
+  'initialElapsedSeconds': int('$END_INITIAL_TS') - int('$START_TS'),
+  'initialProbe': probe(initial),
   'qaStatus': 'PENDING_HUMAN_REVIEW',
   'paidInferenceUsed': False,
   'actualSpendEur': 0,
@@ -157,7 +181,22 @@ Path('$STATE').write_text(json.dumps(state, indent=2), encoding='utf-8')
 print(json.dumps(state, indent=2))
 PY
 
-# Stage B: extension conditioned on Stage A. No image generation or I2V.
+  echo "GAVE_SKYREELS_INITIAL=$INITIAL_PERSIST"
+  if [[ "$STAGE" == "INITIAL" ]]; then
+    exit 0
+  fi
+else
+  if [[ ! -s "$INITIAL_PERSIST" ]]; then
+    echo "Persistent SkyReels initial segment is missing; run INITIAL stage first" >&2
+    exit 73
+  fi
+fi
+
+# Stage B: extend the persisted generated video. This is video extension, not I2V.
+rm -rf result/gave_first_day_extended
+mkdir -p result/gave_first_day_extended
+rm -f "$CONTINUITY_PERSIST"
+
 $PY generate_video_df.py \
   --model_id "$MODEL_ID" \
   --resolution 540P \
@@ -173,7 +212,7 @@ $PY generate_video_df.py \
   --fps "$FPS" \
   --seed "$SEED" \
   --offload \
-  --video_path "$INITIAL" \
+  --video_path "$INITIAL_PERSIST" \
   --outdir gave_first_day_extended
 
 EXTENDED=$(find result/gave_first_day_extended -type f -name '*.mp4' -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)
@@ -181,15 +220,14 @@ if [[ -z "${EXTENDED:-}" || ! -s "$EXTENDED" ]]; then
   echo "SkyReels extended segment missing" >&2
   exit 72
 fi
-cp "$EXTENDED" "$OUTROOT/skyreels_first_day_continuity_v1.mp4"
+cp "$EXTENDED" "$CONTINUITY_PERSIST"
 
 END_TS=$(date +%s)
 $PY - <<PY
 import json, subprocess
 from pathlib import Path
-out = Path('$OUTROOT')
-video = out / 'skyreels_first_day_continuity_v1.mp4'
-initial = out / 'skyreels_first_day_initial_v1.mp4'
+video = Path('$CONTINUITY_PERSIST')
+initial = Path('$INITIAL_PERSIST')
 
 def probe(path):
     cmd = ['ffprobe','-v','error','-show_entries','format=duration,size','-show_entries','stream=width,height,r_frame_rate,codec_name','-of','json',str(path)]
@@ -201,14 +239,15 @@ def probe(path):
 state = {
   'schema': 'GAVE_SKYREELS_CONTINUITY_STATE_V1',
   'status': 'GENERATED',
+  'stage': 'EXTEND',
   'engine': 'SkyReels-V2-DF-1.3B-540P',
   'upstreamCommit': '$UPSTREAM_COMMIT',
-  'initialOutput': str(initial.relative_to(Path('$ROOT'))),
-  'output': str(video.relative_to(Path('$ROOT'))),
-  'elapsedSeconds': int('$END_TS') - int('$START_TS'),
+  'initialOutput': '.gave/lightning/output/skyreels_first_day_initial_v1.mp4',
+  'output': '.gave/lightning/output/skyreels_first_day_continuity_v1.mp4',
+  'stageElapsedSeconds': int('$END_TS') - int('$START_TS'),
   'initialProbe': probe(initial),
   'outputProbe': probe(video),
-  'continuityMechanism': 'VIDEO_EXTENSION_FROM_PREVIOUS_GENERATED_SEGMENT',
+  'continuityMechanism': 'VIDEO_EXTENSION_FROM_PERSISTED_GENERATED_SEGMENT',
   'qaStatus': 'PENDING_HUMAN_REVIEW',
   'paidInferenceUsed': False,
   'actualSpendEur': 0,
@@ -225,4 +264,4 @@ Path('$STATE').write_text(json.dumps(state, indent=2), encoding='utf-8')
 print(json.dumps(state, indent=2))
 PY
 
-echo "GAVE_SKYREELS_VIDEO=$OUTROOT/skyreels_first_day_continuity_v1.mp4"
+echo "GAVE_SKYREELS_VIDEO=$CONTINUITY_PERSIST"
