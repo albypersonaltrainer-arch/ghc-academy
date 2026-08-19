@@ -110,6 +110,8 @@ jobs:
               'backend': request.get('backend'),
               'workflowOutcome': os.environ.get('GENERATE_OUTCOME', 'unknown'),
               'headSha': os.environ.get('GITHUB_SHA'),
+              'runId': os.environ.get('GITHUB_RUN_ID'),
+              'runAttempt': os.environ.get('GITHUB_RUN_ATTEMPT'),
               'updatedAtUtc': datetime.now(timezone.utc).isoformat(),
               'paidInferenceAllowed': False,
               'actualSpendEur': 0,
