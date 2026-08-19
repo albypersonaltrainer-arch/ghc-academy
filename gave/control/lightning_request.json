@@ -1,8 +1,8 @@
 {
   "schema": "GAVE_LIGHTNING_REQUEST_V1",
-  "requestId": "skyreels-extension-0012",
+  "requestId": "skyreels-recover-0013",
   "enabled": true,
-  "operation": "SKYREELS_EXTENSION_TEST",
+  "operation": "SKYREELS_RECOVER",
   "backend": "SKYREELS_V2_DF_1_3B_540P",
   "machine": "T4_INTERRUPTIBLE",
   "paidInferenceAllowed": false,
