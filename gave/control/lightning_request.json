@@ -1,8 +1,8 @@
 {
   "schema": "GAVE_LIGHTNING_REQUEST_V1",
-  "requestId": "skyreels-continuity-0010",
+  "requestId": "skyreels-initial-0011",
   "enabled": true,
-  "operation": "SKYREELS_CONTINUITY_TEST",
+  "operation": "SKYREELS_INITIAL_TEST",
   "backend": "SKYREELS_V2_DF_1_3B_540P",
   "machine": "T4_INTERRUPTIBLE",
   "paidInferenceAllowed": false,
