@@ -1,0 +1,40 @@
+name: GAVE Documentary V1 CI
+
+on:
+  push:
+    branches: [gave/documentary-v1]
+    paths:
+      - 'gave/documentary/**'
+      - '.github/workflows/gave-documentary-v1-ci.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gave/documentary-v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile
+        run: python -m compileall -q gave/documentary
+      - name: Install test runner
+        run: python -m pip install -q pytest
+      - name: Unit tests
+        run: pytest -q gave/documentary/tests
+      - name: Plan smoke test
+        run: |
+          printf '%s\n' 'La fuerza es una capacidad del sistema neuromuscular. La técnica modifica cómo se distribuyen las cargas durante un ejercicio.' > /tmp/narration.txt
+          python -m gave.documentary.pipeline plan --text-file /tmp/narration.txt --title 'Smoke' --target-seconds 20 --out /tmp/job.json
+          python - <<'PY'
+          import json
+          p=json.load(open('/tmp/job.json'))
+          assert p['safety']['realMediaOnly'] is True
+          assert p['safety']['aiGeneratedMediaAllowed'] is False
+          assert p['safety']['paidAssetsAllowed'] is False
+          assert p['safety']['productionTouched'] is False
+          assert len(p['beats']) >= 1
+          print('DOCUMENTARY_CONTRACT_PASS')
+          PY
