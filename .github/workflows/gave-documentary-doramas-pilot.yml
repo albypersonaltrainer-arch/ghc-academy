@@ -5,6 +5,10 @@ on:
     branches: [gave/documentary-v1]
     paths:
       - '.github/workflows/gave-documentary-doramas-pilot.yml'
+      - 'gave/documentary/assets.py'
+      - 'gave/documentary/sources.py'
+      - 'gave/documentary/renderer.py'
+      - 'gave/documentary/tests/doramas_pilot_01.txt'
   workflow_dispatch:
 
 jobs:
