@@ -49,6 +49,8 @@ def render_documentary(
         raise RuntimeError("ffmpeg and ffprobe are required")
 
     output = Path(output_path)
+    if output.suffix.lower() != ".mp4":
+        raise ValueError("GAVE Documentary V1 output must be .mp4")
     output.parent.mkdir(parents=True, exist_ok=True)
     work = output.parent / (output.stem + "_work")
     work.mkdir(parents=True, exist_ok=True)
@@ -90,33 +92,50 @@ def render_documentary(
     picture = work / "picture_lock.mp4"
     _run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(concat_file), "-c", "copy", str(picture)])
 
-    srt = work / "subtitles.srt"
+    srt = work / "subtitles_es.srt"
     subtitle_job = json.loads(json.dumps(job))
     for beat in subtitle_job.get("beats", []):
         beat["durationSeconds"] = float(beat.get("durationSeconds") or 0) * scale
     subtitle_job["targetDurationSeconds"] = narration_duration
     write_srt(subtitle_job, srt)
 
+    # V1 carries Spanish subtitles as a selectable MP4 text track (mov_text).
+    # They are intentionally not forced/default so the Academy player can keep CC OFF by default.
     if narration_audio:
-        cmd = ["ffmpeg", "-y", "-i", str(picture), "-i", str(narration_audio)]
         if music_audio:
-            cmd += [
-                "-stream_loop", "-1", "-i", str(music_audio), "-filter_complex",
+            cmd = [
+                "ffmpeg", "-y", "-i", str(picture), "-i", str(narration_audio),
+                "-stream_loop", "-1", "-i", str(music_audio), "-i", str(srt),
+                "-filter_complex",
                 "[1:a]volume=1.0[voice];[2:a]volume=0.055[music];[voice][music]amix=inputs=2:duration=first:dropout_transition=2[a]",
-                "-map", "0:v", "-map", "[a]",
+                "-map", "0:v", "-map", "[a]", "-map", "3:0",
             ]
         else:
-            cmd += ["-map", "0:v", "-map", "1:a"]
-        cmd += ["-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(output)]
+            cmd = [
+                "ffmpeg", "-y", "-i", str(picture), "-i", str(narration_audio), "-i", str(srt),
+                "-map", "0:v", "-map", "1:a", "-map", "2:0",
+            ]
+        cmd += [
+            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-c:s", "mov_text",
+            "-metadata:s:s:0", "language=spa", "-metadata:s:s:0", "title=Español",
+            "-disposition:s:0", "0", "-shortest", str(output),
+        ]
         _run(cmd)
     else:
-        shutil.copy2(picture, output)
+        _run([
+            "ffmpeg", "-y", "-i", str(picture), "-i", str(srt),
+            "-map", "0:v", "-map", "1:0", "-c:v", "copy", "-c:s", "mov_text",
+            "-metadata:s:s:0", "language=spa", "-metadata:s:s:0", "title=Español",
+            "-disposition:s:0", "0", str(output),
+        ])
 
     return {
         "schema": "GAVE_DOCUMENTARY_RENDER_V1",
         "status": "PICTURE_LOCK" if not narration_audio else "AUDIO_PICTURE_LOCK",
         "output": str(output), "durationSeconds": round(_probe_duration(output), 3),
-        "subtitles": str(srt), "realMediaOnly": True,
-        "aiGeneratedMediaUsed": False, "paidAssetsUsed": False,
-        "productionTouched": False, "qaStatus": "PENDING_HUMAN_REVIEW",
+        "subtitles": str(srt), "subtitleTrackIncluded": True,
+        "subtitleTrackLanguage": "es", "subtitleDefault": False,
+        "realMediaOnly": True, "aiGeneratedMediaUsed": False,
+        "paidAssetsUsed": False, "productionTouched": False,
+        "qaStatus": "PENDING_HUMAN_REVIEW",
     }
