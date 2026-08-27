@@ -1,0 +1,107 @@
+name: GAVE Documentary Doramas Final V1
+
+on:
+  push:
+    branches: [gave/documentary-v1]
+    paths:
+      - '.github/workflows/gave-documentary-doramas-final-v1.yml'
+      - 'gave/documentary/doramas_curated.py'
+      - 'gave/documentary/tests/doramas_documentary_v1.txt'
+      - 'gave/documentary/renderer.py'
+      - 'gave/documentary/subtitles.py'
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gave/documentary-v1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install zero-cost runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg curl
+          python -m pip install -q piper-tts
+
+      - name: Prepare curated real-media documentary
+        run: |
+          python gave/documentary/doramas_curated.py \
+            --root gave/runs/documentary_doramas_final_v1 \
+            --narration gave/documentary/tests/doramas_documentary_v1.txt
+
+      - name: Download Piper Spanish voice explicitly
+        run: |
+          mkdir -p gave/runs/documentary_doramas_final_v1/voices
+          python -m piper.download_voices \
+            --data-dir gave/runs/documentary_doramas_final_v1/voices \
+            es_ES-davefx-medium
+          test -s gave/runs/documentary_doramas_final_v1/voices/es_ES-davefx-medium.onnx
+          test -s gave/runs/documentary_doramas_final_v1/voices/es_ES-davefx-medium.onnx.json
+
+      - name: Generate zero-cost Spanish narration
+        run: |
+          piper \
+            --data-dir gave/runs/documentary_doramas_final_v1/voices \
+            --model es_ES-davefx-medium \
+            --output_file gave/runs/documentary_doramas_final_v1/narration.wav \
+            < gave/documentary/tests/doramas_documentary_v1.txt
+          ffprobe -v error -show_entries format=duration \
+            -of default=nk=1:nw=1 gave/runs/documentary_doramas_final_v1/narration.wav
+
+      - name: Render documentary 1080p
+        run: |
+          python -m gave.documentary.pipeline render \
+            --job gave/runs/documentary_doramas_final_v1/job.json \
+            --ledger gave/runs/documentary_doramas_final_v1/asset_ledger.json \
+            --narration-audio gave/runs/documentary_doramas_final_v1/narration.wav \
+            --out gave/runs/documentary_doramas_final_v1/doramas_documental_v1.mp4
+
+      - name: Validate final documentary and guards
+        run: |
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          root=Path('gave/runs/documentary_doramas_final_v1')
+          state=json.loads((root/'doramas_documental_v1.state.json').read_text(encoding='utf-8'))
+          ledger=json.loads((root/'asset_ledger.json').read_text(encoding='utf-8'))
+          assert state['realMediaOnly'] is True
+          assert state['aiGeneratedMediaUsed'] is False
+          assert state['paidAssetsUsed'] is False
+          assert state['productionTouched'] is False
+          assert state['subtitleTrackIncluded'] is True
+          assert len(ledger['items']) == 30
+          assert all(x['sha256'] and x['policyAccepted'] and x['aiGenerated'] is False for x in ledger['items'])
+          raw=subprocess.check_output([
+              'ffprobe','-v','error',
+              '-show_entries','stream=codec_type,codec_name:format=duration,size',
+              '-of','json',str(root/'doramas_documental_v1.mp4')
+          ], text=True)
+          data=json.loads(raw)
+          types=[s.get('codec_type') for s in data['streams']]
+          assert 'video' in types and 'audio' in types and 'subtitle' in types
+          duration=float(data['format']['duration'])
+          assert 240 <= duration <= 480
+          print(raw)
+          print('GAVE_DORAMAS_DOCUMENTARY_FINAL_V1_PASS')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gave-doramas-documental-final-v1
+          path: |
+            gave/runs/documentary_doramas_final_v1/doramas_documental_v1.mp4
+            gave/runs/documentary_doramas_final_v1/doramas_documental_v1.state.json
+            gave/runs/documentary_doramas_final_v1/asset_ledger.json
+            gave/runs/documentary_doramas_final_v1/job.json
+            gave/runs/documentary_doramas_final_v1/narration.wav
+            gave/runs/documentary_doramas_final_v1/doramas_documental_v1_work/subtitles_es.srt
+          retention-days: 7
