@@ -36,47 +36,102 @@ def _wm_ext(meta: dict[str, Any], key: str) -> str:
     return _strip_html(value)
 
 
+def _commons_title_from_landing(url: str) -> str | None:
+    try:
+        parsed = urllib.parse.urlparse(url)
+        if "commons.wikimedia.org" not in parsed.netloc.lower():
+            return None
+        path = urllib.parse.unquote(parsed.path)
+        marker = "/wiki/File:"
+        if marker not in path:
+            return None
+        return "File:" + path.split(marker, 1)[1].replace("_", " ")
+    except Exception:
+        return None
+
+
+def _commons_metadata(file_title: str) -> dict[str, Any] | None:
+    params = {
+        "action": "query", "format": "json", "formatversion": "2",
+        "titles": file_title, "prop": "imageinfo|categories",
+        "iiprop": "url|extmetadata", "cllimit": "max", "origin": "*",
+    }
+    payload = _get_json("https://commons.wikimedia.org/w/api.php?" + urllib.parse.urlencode(params))
+    pages = payload.get("query", {}).get("pages", []) or []
+    if not pages or pages[0].get("missing"):
+        return None
+    return pages[0]
+
+
 class WikimediaSource:
+    """Wikimedia rights metadata + Openverse's cached thumbnail delivery.
+
+    GitHub-hosted runners are frequently rate-limited by upload.wikimedia.org.
+    We therefore discover the Wikimedia item through Openverse, independently
+    re-check its live Commons metadata/categories, and download the image through
+    Openverse's thumbnail proxy. Openverse is transport/discovery only; Commons
+    remains the rights/reality authority for this adapter.
+    """
+
     id = "wikimedia"
 
     def search(self, query: str, limit: int = 12) -> list[dict[str, Any]]:
-        params = {
-            "action": "query", "format": "json", "formatversion": "2",
-            "generator": "search", "gsrsearch": query, "gsrnamespace": "6",
-            "gsrlimit": str(max(1, min(limit, 20))), "prop": "imageinfo|categories",
-            "iiprop": "url|extmetadata", "iiurlwidth": "2200",
-            "cllimit": "max", "origin": "*",
+        ov_params = {
+            "q": query,
+            "source": "wikimedia",
+            "license": "by,cc0,pdm",
+            "license_type": "commercial,modification",
+            "page_size": str(max(1, min(limit, 20))),
         }
-        payload = _get_json("https://commons.wikimedia.org/w/api.php?" + urllib.parse.urlencode(params))
-        pages = payload.get("query", {}).get("pages", []) or []
+        ov = _get_json("https://api.openverse.org/v1/images/?" + urllib.parse.urlencode(ov_params))
+        results = ov.get("results", []) or []
         assets: list[dict[str, Any]] = []
-        for page in pages:
+
+        for result in results:
+            landing = str(result.get("foreign_landing_url") or "")
+            file_title = _commons_title_from_landing(landing)
+            if not file_title:
+                continue
+            page = _commons_metadata(file_title)
+            if not page:
+                continue
             info = (page.get("imageinfo") or [{}])[0]
             meta = info.get("extmetadata") or {}
             cats = [str(c.get("title") or "") for c in page.get("categories", [])]
             license_short = _wm_ext(meta, "LicenseShortName")
             usage_terms = _wm_ext(meta, "UsageTerms")
-            creator = _wm_ext(meta, "Artist") or _wm_ext(meta, "Credit")
+            creator = _wm_ext(meta, "Artist") or _wm_ext(meta, "Credit") or str(result.get("creator") or "")
             description = _wm_ext(meta, "ImageDescription")
-            title = str(page.get("title") or "").removeprefix("File:")
+            title = str(page.get("title") or file_title).removeprefix("File:")
             license_code = license_short or usage_terms
             normalized_license = license_code.lower()
+            thumbnail = str(result.get("thumbnail") or "")
+            if not thumbnail.startswith("https://api.openverse.org/v1/thumbs/"):
+                continue
             assets.append({
-                "source": self.id, "sourceId": str(page.get("pageid") or title), "mediaType": "image",
-                "title": title, "description": description, "creator": creator,
-                "landingUrl": info.get("descriptionurl") or info.get("descriptionshorturl"),
-                # Prefer a Wikimedia-generated 2200 px derivative. It is ample for a
-                # 1920x1080 documentary while avoiding needless original-file load.
-                "downloadUrl": info.get("thumburl") or info.get("url"),
-                "originalUrl": info.get("url"),
+                "source": self.id,
+                "sourceId": str(page.get("pageid") or title),
+                "mediaType": "image",
+                "title": title,
+                "description": description,
+                "creator": creator,
+                "landingUrl": info.get("descriptionurl") or landing,
+                "downloadUrl": thumbnail,
+                "originalUrl": info.get("url") or result.get("url"),
+                "deliveryProxy": "OPENVERSE_THUMBNAIL_PROXY",
+                "rightsAuthority": "WIKIMEDIA_COMMONS_LIVE_METADATA",
                 "licenseCode": license_code,
-                "licenseUrl": _wm_ext(meta, "LicenseUrl"), "attribution": creator,
+                "licenseUrl": _wm_ext(meta, "LicenseUrl"),
+                "attribution": creator,
                 "isPublicDomain": "public domain" in normalized_license or "cc0" in normalized_license,
                 "commercialUse": "noncommercial" not in normalized_license,
                 "modificationAllowed": "no derivatives" not in normalized_license,
-                "aiGenerated": False, "categoriesText": " | ".join(cats),
-                "metadataText": " | ".join((_wm_ext(meta, "Categories"), usage_terms, license_short)),
-                "categoryScanComplete": True, "containsRecognizablePeople": False, "possibleTrademark": False,
+                "aiGenerated": False,
+                "categoriesText": " | ".join(cats),
+                "metadataText": " | ".join((_wm_ext(meta, "Categories"), usage_terms, license_short, description)),
+                "categoryScanComplete": True,
+                "containsRecognizablePeople": False,
+                "possibleTrademark": False,
             })
         return assets
 
