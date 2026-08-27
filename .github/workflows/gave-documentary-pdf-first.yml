@@ -1,0 +1,153 @@
+name: GAVE Documentary PDF First
+
+on:
+  push:
+    branches: [gave/documentary-v1]
+    paths:
+      - 'gave/documentary/pdf_ingest.py'
+      - 'gave/documentary/pipeline.py'
+      - 'gave/documentary/requirements-pdf.txt'
+      - 'gave/documentary/PDF_FIRST_SPEC.md'
+      - 'gave/documentary/tests/test_pdf_ingest.py'
+      - '.github/workflows/gave-documentary-pdf-first.yml'
+  workflow_dispatch:
+
+jobs:
+  pdf-first-contract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gave/documentary-v1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PDF-first test runtime
+        run: |
+          python -m pip install -q pytest reportlab
+          python -m pip install -q -r gave/documentary/requirements-pdf.txt
+
+      - name: Run documentary unit tests
+        run: |
+          python -m pytest -q \
+            gave/documentary/tests/test_pdf_ingest.py \
+            gave/documentary/tests/test_planner.py \
+            gave/documentary/tests/test_policy.py
+
+      - name: Build synthetic Academy-style PDF fixture
+        run: |
+          mkdir -p gave/runs/pdf_first_smoke
+          python - <<'PY'
+          from reportlab.lib import colors
+          from reportlab.lib.pagesizes import A4
+          from reportlab.lib.styles import getSampleStyleSheet
+          from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+
+          out='gave/runs/pdf_first_smoke/course_fixture.pdf'
+          styles=getSampleStyleSheet()
+          story=[]
+          story.append(Paragraph('Curso de prueba GHC Academy', styles['Title']))
+          story.append(Spacer(1, 12))
+
+          base=(
+              'La adaptación al entrenamiento exige interpretar la carga, la recuperación, el contexto y la respuesta individual. '
+              'Una decisión profesional no se limita a aplicar una receta: relaciona datos, objetivos y evolución para ajustar el programa. '
+              'El razonamiento debe explicar por qué se mantiene, progresa o modifica cada variable y cómo se comprueba después su efecto.'
+          )
+          for section in range(1, 4):
+              story.append(Paragraph(f'{section}. Fundamentos de la sección {section}', styles['Heading1']))
+              for idx in range(1, 11):
+                  story.append(Paragraph(
+                      f'Bloque {section}.{idx}. {base} En este bloque {section}.{idx} se conserva la trazabilidad académica del contenido.',
+                      styles['BodyText'],
+                  ))
+                  story.append(Spacer(1, 5))
+              if section == 2:
+                  story.append(Paragraph('Tabla 1. Ejemplo de variables de programación', styles['BodyText']))
+                  table=Table([
+                      ['Variable', 'Observación', 'Decisión'],
+                      ['Carga', 'Respuesta estable', 'Mantener'],
+                      ['Fatiga', 'Aumento sostenido', 'Revisar'],
+                  ])
+                  table.setStyle(TableStyle([
+                      ('GRID',(0,0),(-1,-1),0.5,colors.black),
+                      ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'),
+                  ]))
+                  story.append(table)
+                  story.append(Spacer(1, 8))
+                  story.append(Paragraph('Figura 1. Relación conceptual entre evaluación y programación.', styles['BodyText']))
+              story.append(PageBreak())
+
+          story.append(Paragraph('Bibliografía', styles['Heading1']))
+          story.append(Paragraph('Autor, A. (2024). Fundamentos del entrenamiento. Revista de Ciencia del Deporte, vol. 2, pp. 10-20.', styles['BodyText']))
+          story.append(Paragraph('Autor, B. (2025). Programación aplicada. Editorial Académica.', styles['BodyText']))
+
+          SimpleDocTemplate(out, pagesize=A4, rightMargin=54, leftMargin=54, topMargin=54, bottomMargin=54).build(story)
+          print(out)
+          PY
+
+      - name: Ingest PDF and build microdocumentary bundle
+        run: |
+          python -m gave.documentary.pipeline ingest-pdf \
+            --pdf gave/runs/pdf_first_smoke/course_fixture.pdf \
+            --out gave/runs/pdf_first_smoke/course_fixture.ingest.json
+          python -m gave.documentary.pipeline plan-pdf \
+            --ingest gave/runs/pdf_first_smoke/course_fixture.ingest.json \
+            --out gave/runs/pdf_first_smoke/course_fixture.bundle.json \
+            --jobs-dir gave/runs/pdf_first_smoke/jobs
+
+      - name: Validate PDF-first contract and safety
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root=Path('gave/runs/pdf_first_smoke')
+          ingest=json.loads((root/'course_fixture.ingest.json').read_text(encoding='utf-8'))
+          bundle=json.loads((root/'course_fixture.bundle.json').read_text(encoding='utf-8'))
+
+          assert ingest['schema']=='GAVE_PDF_INGEST_V1'
+          assert ingest['source']['ocrUsed'] is False
+          assert ingest['source']['status']=='TEXT_READY'
+          assert ingest['document']['narrativeWordCount'] > 1200
+          assert len(ingest['microdocumentaries']) >= 2
+
+          kinds={b['kind'] for b in ingest['blocks']}
+          assert 'HEADING' in kinds
+          assert 'PARAGRAPH' in kinds
+          assert 'TABLE' in kinds or 'TABLE_CAPTION' in kinds
+          assert 'FIGURE_CAPTION' in kinds
+          assert 'BIBLIOGRAPHY_ENTRY' in kinds
+
+          bibliography_text=' '.join(
+              b['text'] for b in ingest['blocks'] if b['kind']=='BIBLIOGRAPHY_ENTRY'
+          )
+          narration=' '.join(m['narrationText'] for m in ingest['microdocumentaries'])
+          assert 'Editorial Académica' in bibliography_text
+          assert 'Editorial Académica' not in narration
+
+          assert bundle['schema']=='GAVE_PDF_DOCUMENTARY_BUNDLE_V1'
+          assert bundle['jobCount']==len(ingest['microdocumentaries'])
+          assert bundle['safety']['realMediaOnly'] is True
+          assert bundle['safety']['aiGeneratedMediaAllowed'] is False
+          assert bundle['safety']['paidAssetsAllowed'] is False
+          assert bundle['safety']['productionTouched'] is False
+          for job in bundle['jobs']:
+              assert job['schema']=='GAVE_DOCUMENTARY_JOB_FROM_PDF_V1'
+              assert job['pdfContext']['sourceSha256']==ingest['source']['sha256']
+              assert job['safety']['productionTouched'] is False
+          print('GAVE_PDF_FIRST_PASS', bundle['jobCount'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gave-documentary-pdf-first-smoke
+          path: |
+            gave/runs/pdf_first_smoke/course_fixture.ingest.json
+            gave/runs/pdf_first_smoke/course_fixture.bundle.json
+            gave/runs/pdf_first_smoke/jobs/*.json
+          retention-days: 7
