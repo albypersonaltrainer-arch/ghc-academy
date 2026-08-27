@@ -1,0 +1,137 @@
+name: GAVE Documentary Doramas Pilot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gave/documentary-v1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          python -m pip install -q piper-tts
+
+      - name: Build documentary job from PDF-extracted narration
+        run: |
+          mkdir -p gave/runs/documentary_doramas_pilot_01
+          python -m gave.documentary.pipeline plan \
+            --text-file gave/documentary/tests/doramas_pilot_01.txt \
+            --title 'Doramas - Del hombre común al caudillo' \
+            --target-seconds 350 \
+            --out gave/runs/documentary_doramas_pilot_01/job.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('gave/runs/documentary_doramas_pilot_01/job.json')
+          job=json.loads(p.read_text(encoding='utf-8'))
+          job['sourceOrder']=['wikimedia']
+          job['sourceDocument']='Doramas_historia_conquista_Gran_Canaria_4_folios.pdf'
+          job['pilotScope']='PDF pages 1 and opening of page 2; approx. 5-6 minute microdocumentary'
+          job['safety']['realMediaOnly']=True
+          job['safety']['aiGeneratedMediaAllowed']=False
+          job['safety']['paidAssetsAllowed']=False
+          for i,beat in enumerate(job['beats']):
+              beat['assetCount']=1
+              base=beat.get('searchQuery','').strip()
+              beat['searchQuery']=(base+' Gran Canaria Canary Islands').strip()
+              beat['movementCycle']=['SLOW_PUSH','PAN_RIGHT','DETAIL_PUSH','SLOW_PULL']
+              if i % 5 in (0,1,4):
+                  beat['tone']='BLACK_AND_WHITE'
+              else:
+                  beat['tone']='COLOR'
+          p.write_text(json.dumps(job,ensure_ascii=False,indent=2),encoding='utf-8')
+          print('beats',len(job['beats']))
+          PY
+
+      - name: Discover strictly licensed real images
+        run: |
+          python -m gave.documentary.pipeline discover \
+            --job gave/runs/documentary_doramas_pilot_01/job.json \
+            --out gave/runs/documentary_doramas_pilot_01/asset_ledger.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('gave/runs/documentary_doramas_pilot_01')
+          job=json.loads((root/'job.json').read_text(encoding='utf-8'))
+          ledger=json.loads((root/'asset_ledger.json').read_text(encoding='utf-8'))
+          have={i['beatId'] for i in ledger['items']}
+          missing=[b['id'] for b in job['beats'] if b['id'] not in have]
+          print('approved assets',len(ledger['items']),'missing beats',missing)
+          if missing:
+              raise SystemExit('Asset discovery incomplete: '+','.join(missing))
+          for item in ledger['items']:
+              a=item['asset']
+              assert a['policyAccepted'] is True
+              assert a['commercialUse'] is True
+              assert a['modificationAllowed'] is True
+              assert a.get('aiGenerated') is not True
+          PY
+
+      - name: Download approved assets and hash provenance
+        run: |
+          python -m gave.documentary.pipeline download \
+            --ledger gave/runs/documentary_doramas_pilot_01/asset_ledger.json \
+            --asset-dir gave/runs/documentary_doramas_pilot_01/assets
+
+      - name: Generate zero-cost Spanish pilot voice with Piper
+        run: |
+          piper --model es_ES-davefx-medium \
+            --output_file gave/runs/documentary_doramas_pilot_01/narration.wav \
+            < gave/documentary/tests/doramas_pilot_01.txt
+
+      - name: Render 1080p documentary with selectable Spanish subtitles
+        run: |
+          python -m gave.documentary.pipeline render \
+            --job gave/runs/documentary_doramas_pilot_01/job.json \
+            --ledger gave/runs/documentary_doramas_pilot_01/asset_ledger.json \
+            --narration-audio gave/runs/documentary_doramas_pilot_01/narration.wav \
+            --out gave/runs/documentary_doramas_pilot_01/doramas_documentary_pilot_v1.mp4
+
+      - name: Final safety and media validation
+        run: |
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          root=Path('gave/runs/documentary_doramas_pilot_01')
+          state=json.loads((root/'doramas_documentary_pilot_v1.state.json').read_text(encoding='utf-8'))
+          ledger=json.loads((root/'asset_ledger.json').read_text(encoding='utf-8'))
+          assert state['realMediaOnly'] is True
+          assert state['aiGeneratedMediaUsed'] is False
+          assert state['paidAssetsUsed'] is False
+          assert state['productionTouched'] is False
+          assert state['subtitleTrackIncluded'] is True
+          assert len(ledger['items']) >= 1
+          assert all(i.get('sha256') for i in ledger['items'])
+          probe=subprocess.check_output([
+              'ffprobe','-v','error','-show_entries','stream=codec_type,codec_name:format=duration',
+              '-of','json',str(root/'doramas_documentary_pilot_v1.mp4')
+          ],text=True)
+          print(probe)
+          data=json.loads(probe)
+          types=[s.get('codec_type') for s in data['streams']]
+          assert 'video' in types and 'audio' in types and 'subtitle' in types
+          print('GAVE_DORAMAS_PILOT_PASS')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gave-doramas-documentary-pilot-v1
+          path: |
+            gave/runs/documentary_doramas_pilot_01/doramas_documentary_pilot_v1.mp4
+            gave/runs/documentary_doramas_pilot_01/doramas_documentary_pilot_v1.state.json
+            gave/runs/documentary_doramas_pilot_01/asset_ledger.json
+            gave/runs/documentary_doramas_pilot_01/job.json
+            gave/runs/documentary_doramas_pilot_01/doramas_documentary_pilot_v1_work/subtitles_es.srt
+          retention-days: 7
