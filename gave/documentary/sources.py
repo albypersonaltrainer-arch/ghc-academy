@@ -44,7 +44,8 @@ class WikimediaSource:
             "action": "query", "format": "json", "formatversion": "2",
             "generator": "search", "gsrsearch": query, "gsrnamespace": "6",
             "gsrlimit": str(max(1, min(limit, 20))), "prop": "imageinfo|categories",
-            "iiprop": "url|extmetadata", "cllimit": "max", "origin": "*",
+            "iiprop": "url|extmetadata", "iiurlwidth": "2200",
+            "cllimit": "max", "origin": "*",
         }
         payload = _get_json("https://commons.wikimedia.org/w/api.php?" + urllib.parse.urlencode(params))
         pages = payload.get("query", {}).get("pages", []) or []
@@ -64,7 +65,11 @@ class WikimediaSource:
                 "source": self.id, "sourceId": str(page.get("pageid") or title), "mediaType": "image",
                 "title": title, "description": description, "creator": creator,
                 "landingUrl": info.get("descriptionurl") or info.get("descriptionshorturl"),
-                "downloadUrl": info.get("url"), "licenseCode": license_code,
+                # Prefer a Wikimedia-generated 2200 px derivative. It is ample for a
+                # 1920x1080 documentary while avoiding needless original-file load.
+                "downloadUrl": info.get("thumburl") or info.get("url"),
+                "originalUrl": info.get("url"),
+                "licenseCode": license_code,
                 "licenseUrl": _wm_ext(meta, "LicenseUrl"), "attribution": creator,
                 "isPublicDomain": "public domain" in normalized_license or "cc0" in normalized_license,
                 "commercialUse": "noncommercial" not in normalized_license,
