@@ -4,12 +4,17 @@ import hashlib
 import json
 import mimetypes
 import re
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
 
 from .policy import evaluate_asset
 from .sources import default_sources
+
+
+USER_AGENT = "GAVE-Documentary/1.0 (+GHC Academy; educational real-media documentary)"
 
 
 def _tokens(text: str) -> set[str]:
@@ -85,10 +90,48 @@ def save_json(path: str | Path, payload: dict[str, Any]) -> None:
     Path(path).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def _download_with_backoff(url: str, target: Path, *, max_attempts: int = 6) -> None:
+    last_error: Exception | None = None
+    for attempt in range(1, max_attempts + 1):
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": USER_AGENT,
+                "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=90) as response, target.open("wb") as fh:
+                while True:
+                    chunk = response.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    fh.write(chunk)
+            return
+        except urllib.error.HTTPError as exc:
+            last_error = exc
+            if exc.code not in {403, 408, 429, 500, 502, 503, 504} or attempt >= max_attempts:
+                raise
+            retry_after = exc.headers.get("Retry-After") if exc.headers else None
+            try:
+                wait = float(retry_after) if retry_after else min(4.0 * (2 ** (attempt - 1)), 45.0)
+            except ValueError:
+                wait = min(4.0 * (2 ** (attempt - 1)), 45.0)
+            time.sleep(wait)
+        except (urllib.error.URLError, TimeoutError) as exc:
+            last_error = exc
+            if attempt >= max_attempts:
+                raise
+            time.sleep(min(3.0 * (2 ** (attempt - 1)), 30.0))
+    if last_error:
+        raise last_error
+
+
 def download_ledger_assets(ledger: dict[str, Any], output_dir: str | Path) -> dict[str, Any]:
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
-    for idx, item in enumerate(ledger.get("items", []), 1):
+    items = list(ledger.get("items", []))
+    for idx, item in enumerate(items, 1):
         asset = item["asset"]
         url = str(asset["downloadUrl"])
         ext = Path(url.split("?", 1)[0]).suffix.lower()
@@ -96,14 +139,11 @@ def download_ledger_assets(ledger: dict[str, Any], output_dir: str | Path) -> di
             guessed = mimetypes.guess_extension(mimetypes.guess_type(url)[0] or "")
             ext = guessed if guessed in {".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff"} else ".jpg"
         target = out / f"asset_{idx:03d}{ext}"
-        req = urllib.request.Request(url, headers={"User-Agent": "GAVE-Documentary/1.0"})
-        with urllib.request.urlopen(req, timeout=60) as response, target.open("wb") as fh:
-            while True:
-                chunk = response.read(1024 * 1024)
-                if not chunk:
-                    break
-                fh.write(chunk)
+        _download_with_backoff(url, target)
         item["localPath"] = str(target)
         item["sha256"] = hashlib.sha256(target.read_bytes()).hexdigest()
         item["bytes"] = target.stat().st_size
+        # Be deliberately polite to public cultural-media infrastructure.
+        if idx < len(items):
+            time.sleep(1.25)
     return ledger
