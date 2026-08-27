@@ -1,0 +1,218 @@
+name: GAVE Documentary Doramas Curated
+
+on:
+  push:
+    branches: [gave/documentary-v1]
+    paths:
+      - '.github/workflows/gave-documentary-doramas-curated.yml'
+      - 'gave/documentary/tests/doramas_documentary_v1.txt'
+      - 'gave/documentary/renderer.py'
+      - 'gave/documentary/subtitles.py'
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 55
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gave/documentary-v1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install zero-cost runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg curl
+          python -m pip install -q piper-tts
+
+      - name: Download curated verified real-media assets slowly
+        run: |
+          set -euo pipefail
+          ROOT="gave/runs/documentary_doramas_curated_v1"
+          ASSETS="$ROOT/assets"
+          mkdir -p "$ASSETS"
+          UA='GAVE-Documentary/1.0 (educational documentary; zero-cost; real-media-only)'
+
+          fetch() {
+            local out="$1"
+            local url="$2"
+            echo "Downloading $out"
+            curl -L --fail --retry 8 --retry-all-errors --retry-delay 7 \
+              --connect-timeout 30 --max-time 240 -A "$UA" \
+              -o "$ASSETS/$out" "$url"
+            sleep 4
+          }
+
+          fetch '01_doramas.jpg' 'https://upload.wikimedia.org/wikipedia/commons/6/66/Monumento_a_Doramas_Arucas.jpg'
+          fetch '02_cueva_pintada.jpg' 'https://upload.wikimedia.org/wikipedia/commons/9/94/Cueva_Pintada_Verneau.jpg'
+          fetch '03_mapa_gran_canaria.jpg' 'https://upload.wikimedia.org/wikipedia/commons/c/c5/Mapa_Gran_Canaria_Siglo_xviii.jpg'
+          fetch '04_bandama.jpg' 'https://upload.wikimedia.org/wikipedia/commons/a/a6/Gran_Canaria%2C_View_over_the_Caldera_de_Bandama.jpg'
+          fetch '05_arucas.jpg' 'https://upload.wikimedia.org/wikipedia/commons/2/27/Cantonera_real_de_Arucas%2C_Arucas%2C_Gran_Canaria.jpg'
+          fetch '06_parque_doramas.jpg' 'https://upload.wikimedia.org/wikipedia/commons/f/f0/Parque_Doramas_palmera.jpg'
+          fetch '07_benito_galdar.jpg' 'https://upload.wikimedia.org/wikipedia/commons/5/5a/Benito_%22El_Fraile%22%2C_Gran_Canaria.jpg'
+          fetch '08_familia_galdar.jpg' 'https://upload.wikimedia.org/wikipedia/commons/d/d0/Cho_Bartolo_y_familia%2C_G%C3%A1ldar_%28Gran_Canaria%29.jpg'
+          fetch '09_roque_bentayga.jpg' 'https://images.pexels.com/photos/6727547/pexels-photo-6727547.jpeg?cs=srgb&dl=pexels-magic-k-24827758-6727547.jpg&fm=jpg'
+
+          for f in "$ASSETS"/*; do
+            test -s "$f"
+            file "$f"
+          done
+
+      - name: Build PDF-derived documentary job and audited ledger
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+
+          root=Path('gave/runs/documentary_doramas_curated_v1')
+          assets=root/'assets'
+          narration=Path('gave/documentary/tests/doramas_documentary_v1.txt').read_text(encoding='utf-8').strip()
+          paras=[p.strip() for p in narration.split('\n\n') if p.strip()]
+          assert len(paras)==10
+          total_words=sum(len(p.split()) for p in paras)
+          target=total_words/135*60
+
+          beats=[]
+          for i,para in enumerate(paras,1):
+              words=len(para.split())
+              beats.append({
+                  'id':f'B{i:03d}',
+                  'narration':para,
+                  'searchQuery':'CURATED_FROM_PDF',
+                  'tone':'BLACK_AND_WHITE' if i in {1,2,4,6,7,8} else 'COLOR',
+                  'durationSeconds':round(target*words/total_words,3),
+                  'assetCount':3,
+                  'movementCycle':['SLOW_PUSH','PAN_RIGHT','DETAIL_PUSH','SLOW_PULL'],
+              })
+
+          job={
+              'schema':'GAVE_DOCUMENTARY_JOB_V1',
+              'title':'Doramas - Resistencia y memoria en la conquista de Gran Canaria',
+              'language':'es',
+              'narrationText':narration,
+              'targetDurationSeconds':round(target,3),
+              'sourceDocument':'Doramas_historia_conquista_Gran_Canaria_4_folios.pdf',
+              'sourceScope':'Resumen documental de las cuatro páginas del PDF',
+              'style':{
+                  'reference':'historical documentary, sober and cinematic',
+                  'resolution':'1920x1080','fps':25,'subtitleLanguage':'es',
+                  'colorStrategy':'intentional historical B&W mixed with documentary color',
+              },
+              'safety':{
+                  'realMediaOnly':True,'aiGeneratedMediaAllowed':False,
+                  'paidAssetsAllowed':False,'commercialUseRequired':True,
+                  'modificationRequired':True,'productionTouched':False,
+              },
+              'beats':beats,
+          }
+          (root/'job.json').write_text(json.dumps(job,ensure_ascii=False,indent=2),encoding='utf-8')
+
+          meta={
+            '01_doramas.jpg': ('wikimedia','CC0 1.0','https://commons.wikimedia.org/wiki/File:Monumento_a_Doramas_Arucas.jpg'),
+            '02_cueva_pintada.jpg': ('wikimedia','Public Domain','https://commons.wikimedia.org/wiki/File:Cueva_Pintada_Verneau.jpg'),
+            '03_mapa_gran_canaria.jpg': ('wikimedia','Public Domain','https://commons.wikimedia.org/wiki/File:Mapa_Gran_Canaria_Siglo_xviii.jpg'),
+            '04_bandama.jpg': ('wikimedia','CC0 1.0','https://commons.wikimedia.org/wiki/File:Gran_Canaria,_View_over_the_Caldera_de_Bandama.jpg'),
+            '05_arucas.jpg': ('wikimedia','CC0 1.0','https://commons.wikimedia.org/wiki/File:Cantonera_real_de_Arucas,_Arucas,_Gran_Canaria.jpg'),
+            '06_parque_doramas.jpg': ('wikimedia','CC0 1.0','https://commons.wikimedia.org/wiki/File:Parque_Doramas_palmera.jpg'),
+            '07_benito_galdar.jpg': ('wikimedia','Public Domain Mark','https://commons.wikimedia.org/wiki/File:Benito_%22El_Fraile%22,_Gran_Canaria.jpg'),
+            '08_familia_galdar.jpg': ('wikimedia','Public Domain Mark','https://commons.wikimedia.org/wiki/File:Cho_Bartolo_y_familia,_G%C3%A1ldar_(Gran_Canaria).jpg'),
+            '09_roque_bentayga.jpg': ('pexels','Pexels License','https://www.pexels.com/photo/roque-bentayga-of-canary-islands-spain-6727547/'),
+          }
+          sequence=[
+            ['03_mapa_gran_canaria.jpg','04_bandama.jpg','02_cueva_pintada.jpg'],
+            ['07_benito_galdar.jpg','08_familia_galdar.jpg','01_doramas.jpg'],
+            ['06_parque_doramas.jpg','09_roque_bentayga.jpg','04_bandama.jpg'],
+            ['03_mapa_gran_canaria.jpg','02_cueva_pintada.jpg','01_doramas.jpg'],
+            ['09_roque_bentayga.jpg','04_bandama.jpg','06_parque_doramas.jpg'],
+            ['05_arucas.jpg','01_doramas.jpg','09_roque_bentayga.jpg'],
+            ['01_doramas.jpg','02_cueva_pintada.jpg','03_mapa_gran_canaria.jpg'],
+            ['09_roque_bentayga.jpg','03_mapa_gran_canaria.jpg','04_bandama.jpg'],
+            ['06_parque_doramas.jpg','08_familia_galdar.jpg','01_doramas.jpg'],
+            ['01_doramas.jpg','04_bandama.jpg','03_mapa_gran_canaria.jpg'],
+          ]
+          moves=['SLOW_PUSH','PAN_RIGHT','DETAIL_PUSH','SLOW_PULL']
+          items=[]
+          idx=0
+          for b,files in zip(beats,sequence):
+              for fname in files:
+                  idx+=1
+                  path=assets/fname
+                  sha=hashlib.sha256(path.read_bytes()).hexdigest()
+                  source,license_code,landing=meta[fname]
+                  items.append({
+                      'id':f'A{idx:03d}','beatId':b['id'],'localPath':str(path),
+                      'movement':moves[(idx-1)%len(moves)],
+                      'tone':b['tone'] if idx%3 else 'COLOR',
+                      'sha256':sha,'source':source,'licenseCode':license_code,
+                      'landingUrl':landing,'policyAccepted':True,'aiGenerated':False,
+                      'commercialUse':True,'modificationAllowed':True,
+                      'realMediaEvidence':'photograph, historical scan/map, or physical monument; no synthetic asset created by GAVE',
+                  })
+          ledger={
+              'schema':'GAVE_ASSET_LEDGER_V1','items':items,
+              'safety':{'realMediaOnly':True,'aiGeneratedMediaUsed':False,'paidAssetsUsed':False,'productionTouched':False},
+          }
+          (root/'asset_ledger.json').write_text(json.dumps(ledger,ensure_ascii=False,indent=2),encoding='utf-8')
+          print('WORDS',total_words,'TARGET_SECONDS',round(target,2),'CLIPS',len(items))
+          PY
+
+      - name: Generate zero-cost Spanish voice with Piper
+        run: |
+          piper --model es_ES-davefx-medium \
+            --output_file gave/runs/documentary_doramas_curated_v1/narration.wav \
+            < gave/documentary/tests/doramas_documentary_v1.txt
+
+      - name: Render 1080p documentary with selectable Spanish subtitles
+        run: |
+          python -m gave.documentary.pipeline render \
+            --job gave/runs/documentary_doramas_curated_v1/job.json \
+            --ledger gave/runs/documentary_doramas_curated_v1/asset_ledger.json \
+            --narration-audio gave/runs/documentary_doramas_curated_v1/narration.wav \
+            --out gave/runs/documentary_doramas_curated_v1/doramas_documental_v1.mp4
+
+      - name: Final media and safety validation
+        run: |
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          root=Path('gave/runs/documentary_doramas_curated_v1')
+          state=json.loads((root/'doramas_documental_v1.state.json').read_text(encoding='utf-8'))
+          ledger=json.loads((root/'asset_ledger.json').read_text(encoding='utf-8'))
+          assert state['realMediaOnly'] is True
+          assert state['aiGeneratedMediaUsed'] is False
+          assert state['paidAssetsUsed'] is False
+          assert state['productionTouched'] is False
+          assert state['subtitleTrackIncluded'] is True
+          assert len(ledger['items'])==30
+          assert all(i['sha256'] and i['policyAccepted'] and not i['aiGenerated'] for i in ledger['items'])
+          raw=subprocess.check_output([
+              'ffprobe','-v','error','-show_entries','stream=codec_type,codec_name:format=duration,size',
+              '-of','json',str(root/'doramas_documental_v1.mp4')
+          ],text=True)
+          data=json.loads(raw)
+          types=[s.get('codec_type') for s in data['streams']]
+          assert 'video' in types and 'audio' in types and 'subtitle' in types
+          duration=float(data['format']['duration'])
+          assert 240 <= duration <= 480
+          print(raw)
+          print('GAVE_DORAMAS_DOCUMENTARY_V1_PASS')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gave-doramas-documental-v1
+          path: |
+            gave/runs/documentary_doramas_curated_v1/doramas_documental_v1.mp4
+            gave/runs/documentary_doramas_curated_v1/doramas_documental_v1.state.json
+            gave/runs/documentary_doramas_curated_v1/asset_ledger.json
+            gave/runs/documentary_doramas_curated_v1/job.json
+            gave/runs/documentary_doramas_curated_v1/narration.wav
+            gave/runs/documentary_doramas_curated_v1/doramas_documental_v1_work/subtitles_es.srt
+          retention-days: 7
