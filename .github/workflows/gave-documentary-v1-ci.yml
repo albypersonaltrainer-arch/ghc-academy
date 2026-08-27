@@ -23,11 +23,11 @@ jobs:
       - name: Install test runner
         run: python -m pip install -q pytest
       - name: Unit tests
-        run: pytest -q gave/documentary/tests
+        run: PYTHONPATH=. python -m pytest -q gave/documentary/tests
       - name: Plan smoke test
         run: |
           printf '%s\n' 'La fuerza es una capacidad del sistema neuromuscular. La técnica modifica cómo se distribuyen las cargas durante un ejercicio.' > /tmp/narration.txt
-          python -m gave.documentary.pipeline plan --text-file /tmp/narration.txt --title 'Smoke' --target-seconds 20 --out /tmp/job.json
+          PYTHONPATH=. python -m gave.documentary.pipeline plan --text-file /tmp/narration.txt --title 'Smoke' --target-seconds 20 --out /tmp/job.json
           python - <<'PY'
           import json
           p=json.load(open('/tmp/job.json'))
