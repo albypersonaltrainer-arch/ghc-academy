@@ -85,7 +85,7 @@ def render_documentary(
                 "-c:v", "libx264", "-preset", "medium", "-crf", "18",
                 "-pix_fmt", "yuv420p", "-an", str(clip),
             ])
-            clip_paths.append(clip)
+            clip_paths.append(clip.resolve())
 
     concat_file = work / "concat.txt"
     concat_file.write_text("\n".join(f"file '{p.as_posix()}'" for p in clip_paths), encoding="utf-8")
@@ -99,8 +99,8 @@ def render_documentary(
     subtitle_job["targetDurationSeconds"] = narration_duration
     write_srt(subtitle_job, srt)
 
-    # V1 carries Spanish subtitles as a selectable MP4 text track (mov_text).
-    # They are intentionally not forced/default so the Academy player can keep CC OFF by default.
+    # Spanish subtitles are a selectable MP4 text track. They are not forced/default,
+    # so Academy can keep CC OFF by default and enable them when the learner wants them.
     if narration_audio:
         if music_audio:
             cmd = [
