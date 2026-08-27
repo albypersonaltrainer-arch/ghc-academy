@@ -43,8 +43,8 @@ jobs:
               'Telde Gran Canaria Canary Islands',
               'Gran Canaria old map Canary Islands',
               'Las Palmas de Gran Canaria historic',
-              'Gran Canaria mountains barranco landscape',
-              'Galdar Gran Canaria archaeology Canary Islands',
+              'Gran Canaria mountains',
+              'Galdar Gran Canaria',
           ]
           total_words=sum(len(p.split()) for p in paras)
           beats=[]
