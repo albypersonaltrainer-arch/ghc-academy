@@ -1,6 +1,10 @@
 name: GAVE Documentary Doramas Pilot
 
 on:
+  push:
+    branches: [gave/documentary-v1]
+    paths:
+      - '.github/workflows/gave-documentary-doramas-pilot.yml'
   workflow_dispatch:
 
 jobs:
