@@ -27,36 +27,51 @@ jobs:
           sudo apt-get install -y -qq ffmpeg
           python -m pip install -q piper-tts
 
-      - name: Build documentary job from PDF-extracted narration
+      - name: Build directed documentary job from PDF-extracted narration
         run: |
           mkdir -p gave/runs/documentary_doramas_pilot_01
-          python -m gave.documentary.pipeline plan \
-            --text-file gave/documentary/tests/doramas_pilot_01.txt \
-            --title 'Doramas - Del hombre común al caudillo' \
-            --target-seconds 350 \
-            --out gave/runs/documentary_doramas_pilot_01/job.json
           python - <<'PY'
           import json
           from pathlib import Path
-          p=Path('gave/runs/documentary_doramas_pilot_01/job.json')
-          job=json.loads(p.read_text(encoding='utf-8'))
-          job['sourceOrder']=['wikimedia']
-          job['sourceDocument']='Doramas_historia_conquista_Gran_Canaria_4_folios.pdf'
-          job['pilotScope']='PDF pages 1 and opening of page 2; approx. 5-6 minute microdocumentary'
-          job['safety']['realMediaOnly']=True
-          job['safety']['aiGeneratedMediaAllowed']=False
-          job['safety']['paidAssetsAllowed']=False
-          for i,beat in enumerate(job['beats']):
-              beat['assetCount']=1
-              base=beat.get('searchQuery','').strip()
-              beat['searchQuery']=(base+' Gran Canaria Canary Islands').strip()
-              beat['movementCycle']=['SLOW_PUSH','PAN_RIGHT','DETAIL_PUSH','SLOW_PULL']
-              if i % 5 in (0,1,4):
-                  beat['tone']='BLACK_AND_WHITE'
-              else:
-                  beat['tone']='COLOR'
-          p.write_text(json.dumps(job,ensure_ascii=False,indent=2),encoding='utf-8')
-          print('beats',len(job['beats']))
+          narration=Path('gave/documentary/tests/doramas_pilot_01.txt').read_text(encoding='utf-8').strip()
+          paras=[p.strip() for p in narration.split('\n\n') if p.strip()]
+          queries=[
+              'Gran Canaria Canary Islands landscape',
+              'Galdar Gran Canaria Canary Islands',
+              'Canary Islands old map Gran Canaria',
+              'Parque Rural de Doramas Gran Canaria',
+              'Telde Gran Canaria Canary Islands',
+              'Gran Canaria old map Canary Islands',
+              'Las Palmas de Gran Canaria historic',
+              'Gran Canaria mountains barranco landscape',
+              'Galdar Gran Canaria archaeology Canary Islands',
+          ]
+          total_words=sum(len(p.split()) for p in paras)
+          beats=[]
+          for i,(para,query) in enumerate(zip(paras,queries),1):
+              words=len(para.split())
+              dur=350.0*words/total_words
+              beats.append({
+                  'id':f'B{i:03d}','narration':para,'searchQuery':query,
+                  'tone':'BLACK_AND_WHITE' if i in {1,3,6,7} else 'COLOR',
+                  'durationSeconds':round(dur,3),'assetCount':2,
+                  'movementCycle':['SLOW_PUSH','PAN_RIGHT','DETAIL_PUSH','SLOW_PULL'],
+              })
+          job={
+              'schema':'GAVE_DOCUMENTARY_JOB_V1','title':'Doramas - Del hombre común al caudillo',
+              'language':'es','narrationText':narration,'targetDurationSeconds':350.0,
+              'sourceDocument':'Doramas_historia_conquista_Gran_Canaria_4_folios.pdf',
+              'pilotScope':'PDF pages 1 and opening of page 2; 5-6 minute representative microdocumentary',
+              'style':{'reference':'premium historical documentary','resolution':'1920x1080','fps':25,
+                       'defaultShotSeconds':10.0,'subtitleLanguage':'es',
+                       'colorStrategy':'intentional B&W history beats mixed with documentary color'},
+              'safety':{'realMediaOnly':True,'aiGeneratedMediaAllowed':False,'paidAssetsAllowed':False,
+                        'commercialUseRequired':True,'modificationRequired':True,'productionTouched':False},
+              'sourceOrder':['wikimedia'],'beats':beats,
+          }
+          Path('gave/runs/documentary_doramas_pilot_01/job.json').write_text(
+              json.dumps(job,ensure_ascii=False,indent=2),encoding='utf-8')
+          print('DIRECTED_BEATS',len(beats),'WORDS',total_words)
           PY
 
       - name: Discover strictly licensed real images
@@ -70,9 +85,11 @@ jobs:
           root=Path('gave/runs/documentary_doramas_pilot_01')
           job=json.loads((root/'job.json').read_text(encoding='utf-8'))
           ledger=json.loads((root/'asset_ledger.json').read_text(encoding='utf-8'))
-          have={i['beatId'] for i in ledger['items']}
-          missing=[b['id'] for b in job['beats'] if b['id'] not in have]
-          print('approved assets',len(ledger['items']),'missing beats',missing)
+          counts={b['id']:0 for b in job['beats']}
+          for i in ledger['items']:
+              counts[i['beatId']]+=1
+          print('approved assets',len(ledger['items']),'counts',counts)
+          missing=[bid for bid,n in counts.items() if n < 1]
           if missing:
               raise SystemExit('Asset discovery incomplete: '+','.join(missing))
           for item in ledger['items']:
@@ -116,7 +133,6 @@ jobs:
           assert state['paidAssetsUsed'] is False
           assert state['productionTouched'] is False
           assert state['subtitleTrackIncluded'] is True
-          assert len(ledger['items']) >= 1
           assert all(i.get('sha256') for i in ledger['items'])
           probe=subprocess.check_output([
               'ffprobe','-v','error','-show_entries','stream=codec_type,codec_name:format=duration',
